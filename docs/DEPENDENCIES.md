@@ -8,6 +8,8 @@
 
 本地目标：`Packages/Local/PICO-Unity-SDK-main/XR/`。此目录必须被 Git 忽略。不要把 SDK、SDK 压缩包或 MCP Extensions 推送到公开仓库。
 
+`Assets/Resources/PXR_ProjectSetting.asset`是本应用的非敏感能力配置，随源码保留，以启用手部追踪和入场透视；它通过脚本GUID引用恢复后的SDK，不包含SDK代码或平台账号。不要删掉它后依赖SDK自动生成默认值：默认会关闭手追和透视。另一个`PXR_PlatformSetting.asset`可能包含平台账号、设备与entitlement模拟信息，只供本地使用，必须被Git忽略，不应加入公开快照。
+
 ## Unity XR Hands 源模型
 
 从自己已获许可的 `com.unity.xr.hands` 包取得 `Samples~/HandVisualizer/Models/LeftHand.fbx` 与 `RightHand.fbx`。项目来源记录对应 XR Hands **1.7.3** 的 HandVisualizer；已核对该包中两只 FBX 与项目原件完全一致，较早 1.4.1 样例也是相同字节。当前运行时包版本仍为 **1.7.3**。
@@ -38,3 +40,7 @@ python3 Scripts/restore-local-dependencies.py   --pico-sdk '/path/to/authorized/
 脚本只写入上述既定本地依赖路径，不改 manifest、不联网、不运行 Unity、不启动应用，也不接受任何协议。显式选择的输入根目录先解析为真实目录，便于使用挂载磁盘上的包缓存；包内部及目标路径的符号链接会被拒绝。现有文件必须逐字节相同；遇到未知文件、版本不符、手模型哈希或项目 GUID 不符时停止，不覆盖。中途因磁盘等原因失败可能留下已完成文件，修复原因后重跑只补齐缺项；不要手工覆盖不明文件。
 
 恢复后再打开 Unity，确认 package resolution、两只手模型、PICO loader 与构建目标；按项目构建入口编译。通过源文件检查不表示构建或实机已验收。
+
+## 原始素材与构建来源验证
+
+`CodexBuild.BuildAndroid`还会核对海洋素材的原始许可metadata、canonical源包以及与现有Assets哈希对应的sealed admission receipts。此公开快照保留已获许可的运行素材与来源说明，但不附带原始ZIP归档或含本机路径的验证原件；上述依赖不能由SDK/手模型恢复脚本补齐。使用该构建入口前，需从来源说明恢复原始素材并完成同等来源验证，生成匹配的准入凭据。缺项会主动停止，不能删除验证或伪造receipt来宣称完整构建通过。私有VibeLab导出工作区中的既有来源验证材料不应进入导出的Gradle发布仓库。

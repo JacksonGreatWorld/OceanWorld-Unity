@@ -54,3 +54,7 @@ __pycache__/
 # Private deployment endpoint; restored locally, included only in the intended player build.
 /Assets/Resources/PrivateRelease/
 /Assets/Resources/PrivateRelease.meta
+
+# Account/entitlement simulation settings are local; application capability flags are tracked separately.
+/Assets/Resources/PXR_PlatformSetting.asset
+/Assets/Resources/PXR_PlatformSetting.asset.meta

@@ -147,6 +147,8 @@ class PublicReleaseCheck:
             self.add(relative, 1, "path.host_metadata")
         if suffix in SECRET_SUFFIXES or base.startswith(".env") or SAVE_NAME.search(relative):
             self.add(relative, 1, "path.credential_or_player_save")
+        if unmeta.lower() == "assets/resources/pxr_platformsetting.asset":
+            self.add(relative, 1, "path.platform_account_or_entitlement_settings")
         if suffix in SDK_BINARY_SUFFIXES or (len(parts) > 1 and parts[0] == "Packages" and relative != "Packages/manifest.json"):
             self.add(relative, 1, "path.sdk_or_unapproved_package_payload")
         if suffix in EVIDENCE_SUFFIXES:

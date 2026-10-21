@@ -579,7 +579,7 @@ PlayerSettings:
   openGLRequireES32: 0
   m_TemplateCustomTags: {}
   mobileMTRendering:
-    Android: com.example.oceanworld
+    Android: 1
     iPhone: 1
     tvOS: 1
   m_BuildTargetGroupLightmapEncodingQuality:
@@ -862,12 +862,12 @@ PlayerSettings:
   webGLCloseOnQuit: 0
   webWasm2023: 0
   scriptingDefineSymbols:
-    Android: com.example.oceanworld
+    Android: PICO_SPATIALIZER;ENABLE_PICO_XR_SDK
     Standalone: ENABLE_PICO_XR_SDK;PICO_SPATIALIZER
   additionalCompilerArguments: {}
   platformArchitecture: {}
   scriptingBackend:
-    Android: com.example.oceanworld
+    Android: 1
   il2cppCompilerConfiguration: {}
   il2cppCodeGeneration: {}
   il2cppStacktraceInformation: {}

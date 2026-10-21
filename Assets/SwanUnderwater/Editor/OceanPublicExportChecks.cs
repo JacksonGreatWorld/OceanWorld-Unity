@@ -6,6 +6,7 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using UnityEditor;
+using UnityEditor.Build;
 using UnityEngine;
 
 namespace SwanUnderwater.EditorTests
@@ -39,6 +40,13 @@ namespace SwanUnderwater.EditorTests
             var hosts=new List<GameObject>();
             try
             {
+                Check(PlayerSettings.GetScriptingBackend(NamedBuildTarget.Android)==ScriptingImplementation.IL2CPP,"Android backend remains IL2CPP after public sanitization");
+                Check(PlayerSettings.GetMobileMTRendering(NamedBuildTarget.Android),"Android multithreaded rendering remains a typed boolean after public sanitization");
+                var androidDefines=new HashSet<string>(PlayerSettings.GetScriptingDefineSymbols(NamedBuildTarget.Android).Split(';'));
+                Check(androidDefines.Contains("ENABLE_PICO_XR_SDK")&&androidDefines.Contains("PICO_SPATIALIZER"),"Android SDK symbols remain defines rather than the public package identifier");
+                Check(File.Exists(Path.Combine(Application.dataPath,"Resources/PXR_ProjectSetting.asset")),"PICO application capability settings are retained instead of relying on SDK defaults");
+                var picoConfig=ByteDance.PICO.XR.PXR_ProjectSetting.GetProjectConfig();
+                Check(picoConfig!=null&&picoConfig.handTracking&&picoConfig.videoSeeThrough,"PICO hand tracking and passthrough remain enabled for the existing entry and swimming controls");
                 Directory.CreateDirectory(root);
                 Check(OceanLeaderboardConfiguration.Parse("{\"baseUrl\":\"https://example.invalid/ocean/\"}")=="https://example.invalid/ocean","private configuration normalizes HTTPS API prefix");
                 foreach(string invalid in new[]{"{}","{\"baseUrl\":\"http://example.invalid\"}","{\"baseUrl\":\"https://user:secret@example.invalid\"}","{\"baseUrl\":\"https://example.invalid?token=secret\"}","{\"baseUrl\":\"https://example.invalid#secret\"}","{\"baseUrl\":\"https://example.invalid\",\"adminPassword\":\"fixture\"}","{\"baseUrl\":\"https://example.invalid\",\"baseUrl\":\"https://other.invalid\"}"})

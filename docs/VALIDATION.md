@@ -7,7 +7,8 @@
 | 检查 | 实际结果 |
 | --- | --- |
 | Unity6000.0.84f1独立导入与C#编译 | batchmode/nographics正常退出，C#编译错误0 |
-| `OceanPublicExportChecks.RunAll` | **50项通过**，`missingConfigurationChecks=True`；真实隔离账本、Editor RSA身份与配置/发行门禁 |
+| `OceanPublicExportChecks.RunAll` | 首轮完整缺配置检查**50项通过**，`missingConfigurationChecks=True`；后续新增Android类型/宏与PICO能力门禁，在独立Android导出源中实际**51项通过**，`missingConfigurationChecks=False`（私有配置存在，4项缺配置子检查未重复执行） |
+| Android实际编译与项目回归 | 匹配的Android模块预检退出0，C#编译无错误；正式导出前的`OCEAN_REGRESSION_CHECKS_PASS`已出现，素材来源门禁保留 |
 | 原领域回归 | **228项通过**，含账本、ACK、历史、拼音与签名；独立C#环境，不代替头显运行 |
 | 私有配置脚本 | **21项通过**，含默认预检、显式写入、0600权限、幂等、拒绝覆盖、符号链接与危险URL负例 |
 | 私有发布内容禁入 | **6项通过**，PrivateRelease及其元数据拒绝进入公开目录，合法说明/源码仍允许 |
@@ -16,6 +17,8 @@
 完整缺配置检查前，仅将本轮新建的私有部署JSON暂存到仓库外；检查后按原SHA256与权限恢复，未改写其字节，也未读取或改写玩家存档。配置文件与本机SDK、手模型、Library缓存和验证原件均不进入公开Git。
 
 测试包含：有效积分1/2/10、重复拾取防重、中文昵称待服务端确认、缓存游标冷启动、两个持久队列不伪造ACK、缺配置可离线记录、同一签名身份冷重启、旧随机身份冲突保留全部原件、仅有旧发现档时不提前创建评分档、未配置/无效配置阻止正式Android构建。Editor测试身份在创建实际请求前拒绝连接非loopback服务。
+
+后续Android检查修复了旧脱敏误替换的三项设置：多线程渲染与IL2CPP保留正确数值类型，PICO宏恢复；公开包名占位值保留。另恢复不含账号或凭据的应用`PXR_ProjectSetting.asset`和原GUID，以保留手追与入场透视。平台账号/entitlement模拟设置继续忽略并禁止公开。此前仅在Mac编译通过并未覆盖这些Android配置问题。
 
 ## 只读服务连通检查
 
@@ -34,7 +37,7 @@
 
 ## 构建与体验边界
 
-本公开联网副本**尚未生成Android APK**；本轮未执行其Android构建。后续核对发现匹配的Android模块位于Unity.app同级的`PlaybackEngines/AndroidPlayer`，此前“未安装Android Build Support”的路径判断不准确。既有内部PICO候选包不是这份公开修订的对应构建，仓库不附带它。
+本公开联网副本已进入独立Android Gradle正式导出，**此记录尚未确认生成新APK**。匹配的Android模块位于Unity.app同级的`PlaybackEngines/AndroidPlayer`，此前“未安装Android Build Support”的路径判断不准确。原20关code301的Player缓存虽与旧APK指纹相符，但不是本次正式导出或新源码构建，不能替代IL2CPP强制预编译与最终Gradle终验；仓库不附带它。
 
 VibeLab云端不直接构建此Unity源码仓库：须在本机导出独立的Android Gradle工程，完成IL2CPP预编译与`:launcher:assembleRelease`终验，再使用单独仓库提交。源码公开、Editor检查和表单素材保存均不能代替该流程；以[PICO官方提交要求](https://developer-cn.picoxr.com/document/distribute/pico-vibelab-requirements/#7bfed0c3)为准。
 

@@ -74,7 +74,7 @@ git lfs pull
 
 ## 构建
 
-本机依赖恢复并完成私有排行榜配置后，在仓库根目录执行：
+本机依赖、素材来源验证材料恢复并完成私有排行榜配置后，在仓库根目录执行（完整前提见[依赖说明](docs/DEPENDENCIES.md)）：
 
 ```sh
 UNITY_EDITOR=/path/to/Unity ./Scripts/build-android.sh 2.9.8 301
