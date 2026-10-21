@@ -34,7 +34,9 @@
 
 ## 构建与体验边界
 
-本公开联网副本**尚未生成Android APK**；该验证机的Unity安装未带Android Build Support。既有内部PICO候选包不是这份公开修订的对应构建，仓库不附带它。
+本公开联网副本**尚未生成Android APK**；本轮未执行其Android构建。后续核对发现匹配的Android模块位于Unity.app同级的`PlaybackEngines/AndroidPlayer`，此前“未安装Android Build Support”的路径判断不准确。既有内部PICO候选包不是这份公开修订的对应构建，仓库不附带它。
+
+VibeLab云端不直接构建此Unity源码仓库：须在本机导出独立的Android Gradle工程，完成IL2CPP预编译与`:launcher:assembleRelease`终验，再使用单独仓库提交。源码公开、Editor检查和表单素材保存均不能代替该流程；以[PICO官方提交要求](https://developer-cn.picoxr.com/document/distribute/pico-vibelab-requirements/#7bfed0c3)为准。
 
 本轮未做PICO/Quest真机佩戴、GPU/双目特效、持续帧时或新包真实联网同步验收，不承诺固定帧率。联网发行还需要在私有构建环境恢复服务配置；VibeLab草稿保存不等于构建、审核或发布完成。
 
