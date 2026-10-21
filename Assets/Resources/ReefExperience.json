@@ -1,0 +1,9 @@
+{
+  "version": "codex-v39",
+  "heroFish": 120,
+  "schoolingFish": 1200,
+  "schools": 12,
+  "largeFish": 4,
+  "largeFishDistance": 24.0,
+  "requestedEyeScale": 1.0
+}

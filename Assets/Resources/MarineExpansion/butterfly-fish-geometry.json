@@ -1,0 +1,15 @@
+{
+    "schemaVersion": 1,
+    "sourceMeshSha256": "e859a429418dcaee2323d5b5ad5a9ab818ec336e8e65801e8a514601cff62927",
+    "firstPoseDiagonal": 1.410143494606018,
+    "navigationCenter": {
+        "x": 0.0,
+        "y": 0.0,
+        "z": -2.9802322387695315e-8
+    },
+    "navigationSize": {
+        "x": 0.7309063076972961,
+        "y": 0.813336193561554,
+        "z": 1.0240799188613892
+    }
+}

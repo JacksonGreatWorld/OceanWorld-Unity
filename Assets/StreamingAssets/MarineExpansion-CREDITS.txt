@@ -1,0 +1,28 @@
+Atlantic Mackerel (Animated and Game-ready)
+Author: Ishxxn (@1shxxn)
+Source: https://sketchfab.com/3d-models/atlantic-mackerel-animated-and-game-ready-eca6071c26fc4013b8c94a3f37a434c7
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+License URL: https://creativecommons.org/licenses/by/4.0/
+
+Game adaptation by OceanWorld: imported the original Generic skinned FBX;
+selected and looped its authored Swim clip; disabled root motion; used separate
+uniform navigation scale and an anatomical heading wrapper. Original animation
+curves and original downloadable archive were retained without editing.
+The original 800 x 534 source images are retained unchanged. Runtime images
+use an edge-padded 800 x 536 canvas with compensating UV scale. Base-color RGB
+uses native ASTC 4x4; its alpha is set to 255 for the opaque game material.
+The original normal-map X/Y channels are retained losslessly in native RGBA32
+AG packing; the shader reconstructs Z. URP material roughness is a game-selected scalar;
+no source roughness map was supplied. These conversions do not imply author
+endorsement. See OceanMarineCompanions-credits.txt for the turtle and dolphin.
+
+
+Butterfly Fish
+Author: slleggott
+Source: https://sketchfab.com/3d-models/butterfly-fish-1a5d97ef77004074a6b4277cd7e43200
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+License URL: https://creativecommons.org/licenses/by/4.0/
+Changes by OceanWorld: canonical coordinate/unit conversion, uniform scaling,
+original opacity/PBR repacking and ASTC4x4 compression, procedural fin and tail
+motion. Original source mesh and images retained in source archives. No authored
+animation was supplied with this butterfly model; the motion is game-generated.

@@ -1,0 +1,574 @@
+{
+  "version": 1,
+  "profile": "first-20-player-content",
+  "playableLevelCount": 20,
+  "legacyCatalogCount": 100,
+  "availableObservationCount": 30,
+  "policy": [
+    "Only levels 1-20 are playable; levels 21-100 keep their stable catalog and save identities.",
+    "Preserve all 30 currently available observation categories, their authentic models, material dependencies, near/far LODs and collision geometry.",
+    "Historical archive rows, GUIDs and checksums remain as provenance. Raw SourceOnly archives are omitted from this public export. If restored, their bytes and GUIDs must match; original Resources paths and all SourceOnly dependencies must never enter a player.",
+    "Preserve third-party attribution and licenses. Source-byte totals are not promised APK savings."
+  ],
+  "excludedSourceBytes": 29753628,
+  "excludedMetaBytes": 10580,
+  "rows": [
+    {
+      "original": "Assets/Resources/Fish/06_koi.glb",
+      "archive": "Assets/SourceOnly/UnusedResources/Fish/06_koi.glb",
+      "sha256": "f3aa6c5c4c0afddd72afdcd123a270b6ac064965a1defce4ed9715ad1627ae48",
+      "metaSha256": "0ab2a3ea3929ad603d205bdf6205378742b4c3d47dfc2b9f1125f5fa7c006397",
+      "guid": "32b6ec1b0a1114585b27c27df98a0c76",
+      "sourceBytes": 2912216,
+      "metaBytes": 721
+    },
+    {
+      "original": "Assets/Resources/Fish/07_betta.glb",
+      "archive": "Assets/SourceOnly/UnusedResources/Fish/07_betta.glb",
+      "sha256": "76ebd8e1917bc80765b77f63438ea107548d2ec4261dab652419174d9238d04f",
+      "metaSha256": "ae8c14482f6578a2b44b0f99ce29de32d867f8832121bd2e060272f40852c095",
+      "guid": "2f5ade098f86c4af79a3f57a1b4f4d03",
+      "sourceBytes": 2515604,
+      "metaBytes": 721
+    },
+    {
+      "original": "Assets/Resources/Fish/08_fancy_goldfish.glb",
+      "archive": "Assets/SourceOnly/UnusedResources/Fish/08_fancy_goldfish.glb",
+      "sha256": "2cfc177335f85bcec1c529f1d9e0538028bc0e81adb23e4387b52649a4d48522",
+      "metaSha256": "3a315c70ddcfe1a9c0667202eda3ae4b2962b82e617b40cb0b4b3c8ed1264168",
+      "guid": "af1c6abf5f85b4df5a3d408e3ea7f3fe",
+      "sourceBytes": 2702160,
+      "metaBytes": 721
+    },
+    {
+      "original": "Assets/Resources/Fish/09_largemouth_bass.glb",
+      "archive": "Assets/SourceOnly/UnusedResources/Fish/09_largemouth_bass.glb",
+      "sha256": "15aeff67c6585c2c9286b2d4d311c8d1a83f25c33f5119c87c1647f9fcfd6533",
+      "metaSha256": "96c67628eee87b010df4f00249793dd48b283d8b0afb722cf43e3f96b58e7ebd",
+      "guid": "4bc8a033fd7524e5781e6defab9d2c40",
+      "sourceBytes": 2724068,
+      "metaBytes": 721
+    },
+    {
+      "original": "Assets/Resources/Fish/10_rainbow_trout.glb",
+      "archive": "Assets/SourceOnly/UnusedResources/Fish/10_rainbow_trout.glb",
+      "sha256": "0e155a20d4ab2bbd5db41fd9830f53114201059d2d038552cad82fb919ab8b97",
+      "metaSha256": "406655632c74dad691912c9340c8c1bae514c06d4f3b399765354be75f650dd5",
+      "guid": "bf4509eaf1090474d9773539f21c241f",
+      "sourceBytes": 2725356,
+      "metaBytes": 721
+    },
+    {
+      "original": "Assets/Resources/Fish/11_sockeye_salmon.glb",
+      "archive": "Assets/SourceOnly/UnusedResources/Fish/11_sockeye_salmon.glb",
+      "sha256": "3ceaa0fc4cff5a4c40f0083a229f30c785afda9657db01f4ef4685b70bbb83d8",
+      "metaSha256": "33ef6251b4b4451d76a4b7976facce8ddb200ebb4ec34a048ae4a0f421e1d6bc",
+      "guid": "f54df37309c6c44adbbe9d7de6b86b53",
+      "sourceBytes": 2666012,
+      "metaBytes": 721
+    },
+    {
+      "original": "Assets/Resources/Fish/17_piranha.glb",
+      "archive": "Assets/SourceOnly/UnusedResources/Fish/17_piranha.glb",
+      "sha256": "b2036829080f6765ebd4ec736f8c1dae8b0dd3f748b06354203f846fed859676",
+      "metaSha256": "1e2a1f93b2a6623628b7385cc7097a204d9697281e1db5aad117d4add4c56118",
+      "guid": "b3dea974114f84411a8d7f1ee357755c",
+      "sourceBytes": 2715840,
+      "metaBytes": 721
+    },
+    {
+      "original": "Assets/Resources/Fish/18_channel_catfish.glb",
+      "archive": "Assets/SourceOnly/UnusedResources/Fish/18_channel_catfish.glb",
+      "sha256": "7e719d586e8a612eb4ef391799a25b8d7d4ad5cd80c579739b482bbb3f57e28c",
+      "metaSha256": "6794189369c125f357ca49bc22db24c6efedabcff359dd374349022c093cde4b",
+      "guid": "511c7486e020b4b108ca35d7b4734be7",
+      "sourceBytes": 3167252,
+      "metaBytes": 721
+    },
+    {
+      "original": "Assets/Resources/Fish/19_moray_eel.glb",
+      "archive": "Assets/SourceOnly/UnusedResources/Fish/19_moray_eel.glb",
+      "sha256": "096e3c35c9bdfd0b040ee33a59bb5db9a4544e98cb0322fb90b702d9efe9bbdf",
+      "metaSha256": "e4b1a9b88c59baa9aff6bf9ab03924be442e0a7f395a0f39975957ba12311828",
+      "guid": "29489077558e44bc4965035f16853104",
+      "sourceBytes": 2604536,
+      "metaBytes": 721
+    },
+    {
+      "original": "Assets/Resources/Fish/24_freshwater_angelfish.glb",
+      "archive": "Assets/SourceOnly/UnusedResources/Fish/24_freshwater_angelfish.glb",
+      "sha256": "b110362d8c784617fb725fb862087ec36d31bcdd1480bcae9d13fb2ce16c4c0b",
+      "metaSha256": "f0e3ea3316e8dcf2816f5f07858c9e318b7a89f679a256212cddbee315a671b9",
+      "guid": "8916cb1eecfa34f4683ff7650d44638c",
+      "sourceBytes": 2814604,
+      "metaBytes": 721
+    },
+    {
+      "original": "Assets/Resources/Fish/25_silver_arowana.glb",
+      "archive": "Assets/SourceOnly/UnusedResources/Fish/25_silver_arowana.glb",
+      "sha256": "d21b1d954772d7fde4355378ad4c8f29a3d89936bdf34946852dd0b1fec05ed1",
+      "metaSha256": "60c2901f6d2ec3bfec677cb3b9f84f259e746e6a005af29ea387e1a6d451bf2b",
+      "guid": "6ad04f546d07a4549aff0a64962e5a41",
+      "sourceBytes": 1839084,
+      "metaBytes": 721
+    },
+    {
+      "original": "Assets/Resources/IntroFish/CuteClownfish.fbx",
+      "archive": "Assets/SourceOnly/UnusedResources/IntroFish/CuteClownfish.fbx",
+      "sha256": "c5997a71064ff7fa7f379570ca3a6fbd2aca5371594a79dfab422f6c441832d9",
+      "metaSha256": "bdc088b5b1722a851ca76cdd4597cec2a73206e1566bfb00ae3f9fba46dd9a7a",
+      "guid": "8ee0b487a80c449eb3bf8abde2c2f047",
+      "sourceBytes": 366896,
+      "metaBytes": 2649
+    }
+  ],
+  "requiredResources": [
+    {
+      "key": "Audio/underwater_ambient",
+      "source": "Assets/Resources/Audio/underwater_ambient.wav"
+    },
+    {
+      "key": "Bubbles/bubble_ring_glowCircle_512",
+      "source": "Assets/Resources/Bubbles/bubble_ring_glowCircle_512.png"
+    },
+    {
+      "key": "DiverHands/LeftHand",
+      "source": "Assets/Resources/DiverHands/LeftHand.fbx"
+    },
+    {
+      "key": "DiverHands/RightHand",
+      "source": "Assets/Resources/DiverHands/RightHand.fbx"
+    },
+    {
+      "key": "Fish/01_clownfish",
+      "source": "Assets/Resources/Fish/01_clownfish.glb"
+    },
+    {
+      "key": "Fish/02_blue_tang",
+      "source": "Assets/Resources/Fish/02_blue_tang.glb"
+    },
+    {
+      "key": "Fish/03_lionfish",
+      "source": "Assets/Resources/Fish/03_lionfish.glb"
+    },
+    {
+      "key": "Fish/04_anglerfish",
+      "source": "Assets/Resources/Fish/04_anglerfish.glb"
+    },
+    {
+      "key": "Fish/05_pufferfish_inflated",
+      "source": "Assets/Resources/Fish/05_pufferfish_inflated.glb"
+    },
+    {
+      "key": "Fish/12_bluefin_tuna",
+      "source": "Assets/Resources/Fish/12_bluefin_tuna.glb"
+    },
+    {
+      "key": "Fish/13_swordfish",
+      "source": "Assets/Resources/Fish/13_swordfish.glb"
+    },
+    {
+      "key": "Fish/14_hammerhead_shark",
+      "source": "Assets/Resources/Fish/14_hammerhead_shark.glb"
+    },
+    {
+      "key": "Fish/15_great_white_shark",
+      "source": "Assets/Resources/Fish/15_great_white_shark.glb"
+    },
+    {
+      "key": "Fish/16_manta_ray",
+      "source": "Assets/Resources/Fish/16_manta_ray.glb"
+    },
+    {
+      "key": "Fish/20_seahorse",
+      "source": "Assets/Resources/Fish/20_seahorse.glb"
+    },
+    {
+      "key": "Fish/21_ocean_sunfish",
+      "source": "Assets/Resources/Fish/21_ocean_sunfish.glb"
+    },
+    {
+      "key": "Fish/22_flounder",
+      "source": "Assets/Resources/Fish/22_flounder.glb"
+    },
+    {
+      "key": "Fish/23_mandarinfish",
+      "source": "Assets/Resources/Fish/23_mandarinfish.glb"
+    },
+    {
+      "key": "Leaderboard/LeaderboardFont",
+      "source": "Assets/Resources/Leaderboard/LeaderboardFont.otf"
+    },
+    {
+      "key": "Leaderboard/PinyinCandidates",
+      "source": "Assets/Resources/Leaderboard/PinyinCandidates.txt"
+    },
+    {
+      "key": "Loading/OceanEntryAssets",
+      "source": "Assets/Resources/Loading/OceanEntryAssets.asset"
+    },
+    {
+      "key": "Loading/OceanLoadingFont",
+      "source": "Assets/Resources/Loading/OceanLoadingFont.otf"
+    },
+    {
+      "key": "Loading/OceanTitleFont",
+      "source": "Assets/Resources/Loading/OceanTitleFont.ttf"
+    },
+    {
+      "key": "MarineExpansion/butterfly-fish",
+      "source": "Assets/Resources/MarineExpansion/butterfly-fish.prefab"
+    },
+    {
+      "key": "MarineExpansion/butterfly-fish-geometry",
+      "source": "Assets/Resources/MarineExpansion/butterfly-fish-geometry.json"
+    },
+    {
+      "key": "MarineExpansion/dolphin",
+      "source": "Assets/Resources/MarineExpansion/dolphin.prefab"
+    },
+    {
+      "key": "MarineExpansion/dolphin-geometry",
+      "source": "Assets/Resources/MarineExpansion/dolphin-geometry.json"
+    },
+    {
+      "key": "MarineExpansion/mackerel",
+      "source": "Assets/Resources/MarineExpansion/mackerel.prefab"
+    },
+    {
+      "key": "MarineExpansion/mackerel-geometry",
+      "source": "Assets/Resources/MarineExpansion/mackerel-geometry.json"
+    },
+    {
+      "key": "MarineExpansion/sea-turtle",
+      "source": "Assets/Resources/MarineExpansion/sea-turtle.prefab"
+    },
+    {
+      "key": "MarineExpansion/sea-turtle-geometry",
+      "source": "Assets/Resources/MarineExpansion/sea-turtle-geometry.json"
+    },
+    {
+      "key": "OceanCampaign/extended-levels",
+      "source": "Assets/Resources/OceanCampaign/extended-levels.json"
+    },
+    {
+      "key": "PerformanceHudUI",
+      "source": "Assets/SwanUnderwater/Resources/PerformanceHudUI.shader"
+    },
+    {
+      "key": "RealisticReef/coral_brain_lod0",
+      "source": "Assets/Resources/RealisticReef/coral_brain_lod0.prefab"
+    },
+    {
+      "key": "RealisticReef/coral_brain_lod1",
+      "source": "Assets/Resources/RealisticReef/coral_brain_lod1.prefab"
+    },
+    {
+      "key": "RealisticReef/coral_brain_lod2",
+      "source": "Assets/Resources/RealisticReef/coral_brain_lod2.prefab"
+    },
+    {
+      "key": "RealisticReef/coral_cuneata_lod0",
+      "source": "Assets/Resources/RealisticReef/coral_cuneata_lod0.prefab"
+    },
+    {
+      "key": "RealisticReef/coral_cuneata_lod1",
+      "source": "Assets/Resources/RealisticReef/coral_cuneata_lod1.prefab"
+    },
+    {
+      "key": "RealisticReef/coral_cuneata_lod2",
+      "source": "Assets/Resources/RealisticReef/coral_cuneata_lod2.prefab"
+    },
+    {
+      "key": "RealisticReef/coral_palmata_lod0",
+      "source": "Assets/Resources/RealisticReef/coral_palmata_lod0.prefab"
+    },
+    {
+      "key": "RealisticReef/coral_palmata_lod1",
+      "source": "Assets/Resources/RealisticReef/coral_palmata_lod1.prefab"
+    },
+    {
+      "key": "RealisticReef/coral_palmata_lod2",
+      "source": "Assets/Resources/RealisticReef/coral_palmata_lod2.prefab"
+    },
+    {
+      "key": "RealisticReef/coral_spicifera_lod0",
+      "source": "Assets/Resources/RealisticReef/coral_spicifera_lod0.prefab"
+    },
+    {
+      "key": "RealisticReef/coral_spicifera_lod1",
+      "source": "Assets/Resources/RealisticReef/coral_spicifera_lod1.prefab"
+    },
+    {
+      "key": "RealisticReef/coral_spicifera_lod2",
+      "source": "Assets/Resources/RealisticReef/coral_spicifera_lod2.prefab"
+    },
+    {
+      "key": "RealisticReef/market_coastal_cliff_02_collision",
+      "source": "Assets/Resources/RealisticReef/market_coastal_cliff_02_collision.prefab"
+    },
+    {
+      "key": "RealisticReef/market_coastal_cliff_02_lod0",
+      "source": "Assets/Resources/RealisticReef/market_coastal_cliff_02_lod0.prefab"
+    },
+    {
+      "key": "RealisticReef/market_coastal_cliff_02_lod1",
+      "source": "Assets/Resources/RealisticReef/market_coastal_cliff_02_lod1.prefab"
+    },
+    {
+      "key": "RealisticReef/market_coastal_cliff_02_lod2",
+      "source": "Assets/Resources/RealisticReef/market_coastal_cliff_02_lod2.prefab"
+    },
+    {
+      "key": "RealisticReef/market_coral_platygyra_lod0",
+      "source": "Assets/Resources/RealisticReef/market_coral_platygyra_lod0.prefab"
+    },
+    {
+      "key": "RealisticReef/market_coral_platygyra_lod1",
+      "source": "Assets/Resources/RealisticReef/market_coral_platygyra_lod1.prefab"
+    },
+    {
+      "key": "RealisticReef/market_coral_platygyra_lod2",
+      "source": "Assets/Resources/RealisticReef/market_coral_platygyra_lod2.prefab"
+    },
+    {
+      "key": "RealisticReef/market_fan_coral_lod0",
+      "source": "Assets/Resources/RealisticReef/market_fan_coral_lod0.prefab"
+    },
+    {
+      "key": "RealisticReef/market_fan_coral_lod1",
+      "source": "Assets/Resources/RealisticReef/market_fan_coral_lod1.prefab"
+    },
+    {
+      "key": "RealisticReef/market_fan_coral_lod2",
+      "source": "Assets/Resources/RealisticReef/market_fan_coral_lod2.prefab"
+    },
+    {
+      "key": "RealisticReef/market_mountainside_collision",
+      "source": "Assets/Resources/RealisticReef/market_mountainside_collision.prefab"
+    },
+    {
+      "key": "RealisticReef/market_mountainside_lod0",
+      "source": "Assets/Resources/RealisticReef/market_mountainside_lod0.prefab"
+    },
+    {
+      "key": "RealisticReef/market_mountainside_lod1",
+      "source": "Assets/Resources/RealisticReef/market_mountainside_lod1.prefab"
+    },
+    {
+      "key": "RealisticReef/market_mountainside_lod2",
+      "source": "Assets/Resources/RealisticReef/market_mountainside_lod2.prefab"
+    },
+    {
+      "key": "RealisticReef/rock_coast_02_lod0",
+      "source": "Assets/Resources/RealisticReef/rock_coast_02_lod0.prefab"
+    },
+    {
+      "key": "RealisticReef/rock_coast_02_lod1",
+      "source": "Assets/Resources/RealisticReef/rock_coast_02_lod1.prefab"
+    },
+    {
+      "key": "RealisticReef/rock_coast_05_lod0",
+      "source": "Assets/Resources/RealisticReef/rock_coast_05_lod0.prefab"
+    },
+    {
+      "key": "RealisticReef/rock_coast_05_lod1",
+      "source": "Assets/Resources/RealisticReef/rock_coast_05_lod1.prefab"
+    },
+    {
+      "key": "ReefExperience",
+      "source": "Assets/Resources/ReefExperience.json"
+    },
+    {
+      "key": "SchoolFish/01_clownfish",
+      "source": "Assets/Resources/SchoolFish/01_clownfish.glb"
+    },
+    {
+      "key": "SchoolFish/02_blue_tang",
+      "source": "Assets/Resources/SchoolFish/02_blue_tang.glb"
+    },
+    {
+      "key": "SchoolFish/23_mandarinfish",
+      "source": "Assets/Resources/SchoolFish/23_mandarinfish.glb"
+    },
+    {
+      "key": "Shaders/BubbleParticle",
+      "source": "Assets/Resources/Shaders/BubbleParticle.shader"
+    },
+    {
+      "key": "Shaders/ButterflyFishSwim",
+      "source": "Assets/Resources/Shaders/ButterflyFishSwim.shader"
+    },
+    {
+      "key": "Shaders/CoinProximitySparkles",
+      "source": "Assets/Resources/Shaders/CoinProximitySparkles.shader"
+    },
+    {
+      "key": "Shaders/CollectibleSurface",
+      "source": "Assets/Resources/Shaders/CollectibleSurface.shader"
+    },
+    {
+      "key": "Shaders/EnvironmentVeil",
+      "source": "Assets/Resources/Shaders/EnvironmentVeil.shader"
+    },
+    {
+      "key": "Shaders/FishSwim",
+      "source": "Assets/Resources/Shaders/FishSwim.shader"
+    },
+    {
+      "key": "Shaders/HandWake",
+      "source": "Assets/Resources/Shaders/HandWake.shader"
+    },
+    {
+      "key": "Shaders/IntroGuideFish",
+      "source": "Assets/Resources/Shaders/IntroGuideFish.shader"
+    },
+    {
+      "key": "Shaders/OceanEntryTrail",
+      "source": "Assets/Resources/Shaders/OceanEntryTrail.shader"
+    },
+    {
+      "key": "Shaders/OceanEntryWarp",
+      "source": "Assets/Resources/Shaders/OceanEntryWarp.shader"
+    },
+    {
+      "key": "Shaders/OceanEnvironmentTransition",
+      "source": "Assets/Resources/Shaders/OceanEnvironmentTransition.shader"
+    },
+    {
+      "key": "Shaders/OceanReefFan",
+      "source": "Assets/Resources/Shaders/OceanReefFan.shader"
+    },
+    {
+      "key": "Shaders/OceanSanctuaryOrganic",
+      "source": "Assets/Resources/Shaders/OceanSanctuaryOrganic.shader"
+    },
+    {
+      "key": "Shaders/OceanSanctuaryVista",
+      "source": "Assets/Resources/Shaders/OceanSanctuaryVista.shader"
+    },
+    {
+      "key": "Shaders/SanctuarySeagrass",
+      "source": "Assets/Resources/Shaders/SanctuarySeagrass.shader"
+    },
+    {
+      "key": "Shaders/SeabedSand",
+      "source": "Assets/Resources/Shaders/SeabedSand.shader"
+    },
+    {
+      "key": "Shaders/SeabedShell",
+      "source": "Assets/Resources/Shaders/SeabedShell.shader"
+    },
+    {
+      "key": "Shaders/Seagrass",
+      "source": "Assets/Resources/Shaders/Seagrass.shader"
+    },
+    {
+      "key": "Shaders/SkyGuardian",
+      "source": "Assets/Resources/Shaders/SkyGuardian.shader"
+    },
+    {
+      "key": "Shaders/SwimWaterFlow",
+      "source": "Assets/Resources/Shaders/SwimWaterFlow.shader"
+    },
+    {
+      "key": "Shaders/TreasureJackpotGold",
+      "source": "Assets/Resources/Shaders/TreasureJackpotGold.shader"
+    },
+    {
+      "key": "Shaders/TreasureJackpotSpark",
+      "source": "Assets/Resources/Shaders/TreasureJackpotSpark.shader"
+    },
+    {
+      "key": "Shaders/UnderwaterDome",
+      "source": "Assets/Resources/Shaders/UnderwaterDome.shader"
+    },
+    {
+      "key": "Shaders/UnderwaterSkybox",
+      "source": "Assets/Resources/Shaders/UnderwaterSkybox.shader"
+    },
+    {
+      "key": "Shaders/VisionOSSeaBackground",
+      "source": "Assets/Resources/Shaders/VisionOSSeaBackground.shader"
+    },
+    {
+      "key": "Shaders/WaterVolume",
+      "source": "Assets/Resources/Shaders/WaterVolume.shader"
+    },
+    {
+      "key": "Textures/Rock/Rock019_Color",
+      "source": "Assets/Resources/Textures/Rock/Rock019_Color.jpg"
+    },
+    {
+      "key": "Textures/Rock/Rock019_NormalGL",
+      "source": "Assets/Resources/Textures/Rock/Rock019_NormalGL.jpg"
+    },
+    {
+      "key": "Textures/Sand/Ground101_Color",
+      "source": "Assets/Resources/Textures/Sand/Ground101_Color.jpg"
+    },
+    {
+      "key": "Textures/Sand/Ground101_NormalGL",
+      "source": "Assets/Resources/Textures/Sand/Ground101_NormalGL.jpg"
+    },
+    {
+      "key": "Treasure/TreasureFont",
+      "source": "Assets/Resources/Treasure/TreasureFont.otf"
+    }
+  ],
+  "retainedAttributionFiles": [
+    {
+      "path": "Assets/StreamingAssets/MarineExpansion-CREDITS.txt",
+      "sha256": "61dd8d6c8c1a7a9123381099cbffcd2e25e832614a409d2ef370e06af265de49"
+    },
+    {
+      "path": "Assets/StreamingAssets/OceanMarineCompanions-credits.txt",
+      "sha256": "eb0d48ce5953d722e3907223c688483a86c424a1681a85f6c4f7615f78edfb48"
+    },
+    {
+      "path": "Assets/StreamingAssets/ThirdParty/MarketReef.txt",
+      "sha256": "3020465365cd7e9ad9bbf7c23f13f45ec4e3227da035afc2fe2fb2221f42be45"
+    },
+    {
+      "path": "Assets/Resources/Treasure/FONT-SOURCE.txt",
+      "sha256": "0e0eba1b309c5c71fdc8a2d6e69d49aaf59112173faa64f0e9d028d1b4067ad9"
+    },
+    {
+      "path": "Assets/Resources/Treasure/OFL.txt",
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+    },
+    {
+      "path": "Assets/Resources/Leaderboard/OFL.txt",
+      "sha256": "6a73f9541c2de74158c0e7cf6b0a58ef774f5a780bf191f2d7ec9cc53efe2bf2"
+    },
+    {
+      "path": "Assets/Resources/Leaderboard/Pinyin-LICENSE.txt",
+      "sha256": "9c048697be2502a16e8bcb282d5d465a07295b2def0ffb05a269c5d39dbe1586"
+    },
+    {
+      "path": "Assets/Resources/Leaderboard/Pinyin-SOURCES.md",
+      "sha256": "47f5bc18bd2bea393fab0da47f76c7c104e0d433806e974b7cc80cb075b4f662"
+    },
+    {
+      "path": "Assets/Resources/Leaderboard/SOURCE.md",
+      "sha256": "caca3bfca6e58b0fbf46c7e7ebbe15dc687d0919e60f576cd6b12bfb638c5bba"
+    }
+  ],
+  "publicExport": {
+    "scope": "Public source export; install separately licensed local dependencies before building.",
+    "excludedLegacyResourcePrefixes": [
+      "Environment/",
+      "CoralColored/"
+    ],
+    "particleTextureReplacement": {
+      "omitted": "Textures/Bubbles/bubble_transparent",
+      "retained": "Bubbles/bubble_ring_glowCircle_512"
+    },
+    "localDependencyResources": [
+      "DiverHands/LeftHand",
+      "DiverHands/RightHand"
+    ],
+    "archiveRows": "Historical archive policy only. SourceOnly files and raw archives are not included in this public export."
+  },
+  "sourceArchivePolicy": "provenance-only"
+}

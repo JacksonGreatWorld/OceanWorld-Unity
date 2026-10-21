@@ -1,0 +1,18 @@
+New reef artwork credits
+
+Brain Coral (platygyra) by QQman
+https://sketchfab.com/3d-models/brain-coral-platygyra-4ea44ce7563b4407a630e3cc65187a90
+CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
+Modified: node transforms, uniform artistic scale, origin normalization, LODs, texture resizing and ASTC compression.
+
+Fan Coral Cluster Low by Valery.Li
+https://sketchfab.com/3d-models/fan-coral-cluster-low-ee315b6063f8472ea4788a75098a2cb5
+CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
+Modified: node transforms, origin normalization, PBR material conversion, source alpha preserved, GPU water-current sway, ASTC compression.
+
+Mountainside by Dario Barresi and Rico Cilliers — https://polyhaven.com/a/mountainside
+Coastal Cliff 02 by Rob Tuytel — https://polyhaven.com/a/coastal_cliff_02
+CC0: https://polyhaven.com/license
+Modified: normalized origin, explicit open scanning faces assembled front/back at natural proportions, LODs, separate closed collision hull, 4K runtime texture cap and ASTC compression.
+
+Authors do not endorse the project. Individual asset licenses apply only to their respective files.

@@ -1,0 +1,9 @@
+Sea Turtle by Eloi (@Eloiart)
+https://sketchfab.com/3d-models/sea-turtle-23dcb315dea44f5082b020b04710bd31
+Licensed CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+Changes: URP materials, native ASTC4x4 maps, static anatomical orientation/scale, looping controller; explicit in-place body translation curve derived from the original.
+
+Game-Ready dolphin (Swimming) by Allie2k
+https://sketchfab.com/3d-models/game-ready-dolphin-swimming-b621ec8894734bc79c04338edff3cd0d
+Licensed CC BY 4.0 — https://creativecommons.org/licenses/by/4.0/
+Changes: URP materials, native ASTC4x4 maps, static anatomical orientation/scale, looping controller.
