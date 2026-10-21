@@ -189,9 +189,9 @@ namespace SwanUnderwater.EditorTests
             var client = (OceanLeaderboardClient)Get(bridge, "client");
             double deadline = Time.realtimeSinceStartupAsDouble + 30;
             while (!client.Ready)
-            { Check(Time.realtimeSinceStartupAsDouble < deadline, "private offline local ledger becomes ready within thirty seconds"); yield return null; }
-            Check(client.OfflineOnly && client.Ready && !client.IsBusy && client.DeviceId.Length == 64,
-                "new-run acceptance uses the genuine idle offline ledger, with no transport or signing identity");
+            { Check(Time.realtimeSinceStartupAsDouble < deadline, "private Editor score identity becomes ready within thirty seconds"); yield return null; }
+            var identity = Get(client, "identity") as OceanLeaderboardIdentity;
+            Check(identity != null && identity.IsTestIdentity && !client.IsBusy, "new-run acceptance uses only an idle private Editor test identity");
             string identityBefore = client.DeviceId;
             AssertSeededScore(campaign.SaveDirectory, seed);
             var historical = JsonUtility.FromJson<OceanSaveData>(seed.expectedSaveJson);

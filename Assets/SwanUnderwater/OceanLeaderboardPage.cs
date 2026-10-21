@@ -78,10 +78,11 @@ namespace SwanUnderwater
     {
         public static string ValidateBaseUrl(string value)
         {
-            if(!Uri.TryCreate(value,UriKind.Absolute,out Uri uri)||uri.Scheme!=Uri.UriSchemeHttps||uri.UserInfo.Length>0||uri.Query.Length>0||uri.Fragment.Length>0)
+            if(string.IsNullOrEmpty(value)||value!=value.Trim()||value.IndexOfAny(new[]{'?','#','\\'})>=0||HasWhitespace(value)||!Uri.TryCreate(value,UriKind.Absolute,out Uri uri)||uri.Scheme!=Uri.UriSchemeHttps||uri.UserInfo.Length>0||uri.Query.Length>0||uri.Fragment.Length>0)
                 throw new ArgumentException("Leaderboard requires an HTTPS base URL without credentials, query or fragment.");
             return uri.AbsoluteUri.TrimEnd('/');
         }
+        static bool HasWhitespace(string value) { foreach(char c in value)if(char.IsWhiteSpace(c)||char.IsControl(c))return true;return false; }
         public static byte[] Payload(string deviceId,IList<OceanLeaderboardEvent> batch)
         {
             if(!OceanLeaderboardLedger.Hex(deviceId,64)||batch==null||batch.Count<1||batch.Count>64)throw new ArgumentException("Invalid signed event batch.");

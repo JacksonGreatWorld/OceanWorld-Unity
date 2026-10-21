@@ -69,8 +69,8 @@ namespace SwanUnderwater
             // RefreshPage selects the correct board cache before this substitution.
             if (client.CachedPage != null && client.CachedPageCursor == requestedCursor && client.CachedPage.IsDiscovery == panel.IsDiscovery)
                 ApplyPage(client.CachedPage, !string.IsNullOrEmpty(requestedCursor), false);
-            if (client.OfflineOnly)
-            { waitingPage = false; panel.SetBusy(false); RefreshStatus(); return; }
+            if(client.OfflineOnly||client.IdentityMigrationRequired)
+            { panel.SetBusy(false);RefreshStatus();return; }
             waitingPage = true;
             panel.SetBusy(true); RefreshStatus();
         }
@@ -94,10 +94,10 @@ namespace SwanUnderwater
             }
             // A legacy offline page remains readable, but its signed cursor belongs
             // to that catalog. Only a refreshed current page may request more rows.
-            string nextCursor = client.OfflineOnly || page.IsDiscovery && page.CatalogVersion != OceanSpeciesCatalog.CatalogVersion
+            string nextCursor = page.IsDiscovery && page.CatalogVersion != OceanSpeciesCatalog.CatalogVersion
                 ? null : page.nextCursor;
             panel.SetPage(rows, nextCursor, page.totalDevices, page.totalDemoStarts, append,
-                client.OfflineOnly ? OceanLeaderboardClient.OfflineStatus : live ? "排行榜已更新" : "本地缓存 · " + page.serverTime);
+                live ? "排行榜已更新" : "本地缓存 · " + page.serverTime);
         }
         void RefreshStatus()
         {
@@ -107,9 +107,21 @@ namespace SwanUnderwater
             if (waitingPage && client.FinishedPageRequestVersion == requestedClientVersion && !string.IsNullOrEmpty(client.LastError))
             { waitingPage = false; panel.SetBusy(false); }
             string local = "本机 " + client.LocalScore + "分 · 贝壳 " + client.LocalShellTotal + " · 鱼 " + client.LocalFishTotal + " · 金币 " + client.LocalCoinTotal;
-            if (panel.IsDiscovery) local = "我的历史发现 " + client.LocalDiscoveryCount + "类 · 当前图鉴目标 " + OceanSpeciesCatalog.AvailableCount + "类";
-            local += "\n" + OceanLeaderboardClient.OfflineStatus;
-            if (!string.IsNullOrEmpty(client.LastError)) local += " · 本地保存需检查";
+            if(panel.IsDiscovery)
+            {
+                local="我的历史发现 "+client.LocalDiscoveryCount+"类 · 当前图鉴目标 "+OceanSpeciesCatalog.AvailableCount+"类";
+                if(client.PendingDiscoveryCount>0)local+=" · 待上传 "+client.PendingDiscoveryCount;
+                if(client.DiscoveryStatus.Length>0)local+="\n"+client.DiscoveryStatus;
+            }
+            else if (client.IdentityMigrationRequired) local += "\n" + client.LastError;
+            else if (client.OfflineOnly) local += "\n" + OceanLeaderboardClient.OfflineStatus;
+            else if (client.RejectedEventCount > 0) local += " · 部分成绩待核查";
+            else if (!string.IsNullOrEmpty(client.LastError)) local += " · 同步暂不可用";
+            else if (client.PendingCount > 0) local += " · 待上传 " + client.PendingCount;
+            else if (!client.Ready) local += " · 正在准备";
+            else local += " · 已同步";
+            if (!client.CachedPageIsLive && client.CachedPage != null)
+                local += "\n缓存时间 " + client.CachedPage.serverTime;
             panel.SetStatus(local);
             panel.SetNicknameResult(client.Nickname, client.NicknameDraft, client.NicknameStatus, client.NicknameError);
         }

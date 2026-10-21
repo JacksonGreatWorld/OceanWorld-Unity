@@ -38,7 +38,7 @@ ROOT_TEXT_NAMES = {".gitignore", ".gitattributes", ".editorconfig"}
 ROOT_DOC = re.compile(r"^(?:readme(?:[._-].*)?|licen[cs]e(?:[._-].*)?|notice(?:[._-].*)?|third[_-]party.*|asset[_-]sources.*)$", re.I)
 LICENSE_DOC = re.compile(r"(?:licen[cs]e|notice|credit|third[_-]?party|asset[_-]?source|attribution|ofl|copying)", re.I)
 APPROVED_PUBLIC_DOCS = {
-    "docs/ASSETS.md", "docs/DEPENDENCIES.md", "docs/VALIDATION.md", "Sources/README.md",
+    "docs/ASSETS.md", "docs/DEPENDENCIES.md", "docs/VALIDATION.md", "docs/LEADERBOARD.md", "Sources/README.md",
     "Sources/DiverHands/SOURCE.md", "Sources/DiverHands/UNITY-XR-HANDS-LICENSE.md",
     "Sources/MarineExpansion/COMPANIONS.md", "Sources/MarineExpansion/SOURCE.md",
     "Sources/MarketReef/SOURCE.md", "Sources/SchoolFish/README.md",
@@ -56,7 +56,7 @@ FORBIDDEN_SEGMENTS = {
     "spatial", "server", "servers", "validation", "releases", "builds", "library",
     "temp", "logs", "obj", "usersettings", "accelerationsnapshots", "_audit",
     ".ssh", ".aws", ".azure", ".config", "node_modules", "__pycache__",
-    "sourceonly", "unusedresources", "playersaves", "savedata", "performance-data",
+    "sourceonly", "unusedresources", "playersaves", "savedata", "performance-data", "privaterelease",
 }
 SECRET_SUFFIXES = {".keystore", ".jks", ".p12", ".pfx", ".key", ".pem", ".mobileprovision", ".provisionprofile"}
 SDK_BINARY_SUFFIXES = {".dll", ".so", ".aar", ".jar", ".dylib", ".a", ".lib", ".framework", ".xcframework", ".bundle", ".unitypackage", ".zip", ".7z", ".tar", ".tgz", ".gz", ".rar"}

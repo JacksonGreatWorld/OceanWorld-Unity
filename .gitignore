@@ -50,3 +50,7 @@ __pycache__/
 # Also ignore symlinked local caches.
 /Library
 /Packages/packages-lock.json
+
+# Private deployment endpoint; restored locally, included only in the intended player build.
+/Assets/Resources/PrivateRelease/
+/Assets/Resources/PrivateRelease.meta

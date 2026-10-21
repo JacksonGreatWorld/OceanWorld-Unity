@@ -55,7 +55,7 @@ namespace SwanUnderwater.Editor
             public string detail, saveDirectory;
             public string originalQualityName, restoredQualityName, originalPipelinePath, restoredPipelinePath;
             public string restoredMobilePipelinePath, qualityRestorationPhase;
-            public string scope = "Actual production scene and entry in a non-XR Editor Play session, Mobile URP runtime clone, real reef meshes/materials/lights/fog. Camera-only monocular 1280x720 images; close-up positions and shark test time/hits are synthetic. Not headset tracking, stereo quality, device performance or player comfort acceptance. No scene/assets are saved. Public offline client has no transport; no leaderboard UI/page request is invoked.";
+            public string scope = "Actual production scene and entry in a non-XR Editor Play session, Mobile URP runtime clone, real reef meshes/materials/lights/fog. Camera-only monocular 1280x720 images; close-up positions and shark test time/hits are synthetic. Not headset tracking, stereo quality, device performance or player comfort acceptance. No scene/assets are saved. Editor signing identity cannot automatically upload; no leaderboard UI/page request is invoked.";
             public List<ViewRecord> screenshots = new List<ViewRecord>();
             public List<string> groundingDiagnostics = new List<string>();
             public List<string> errors = new List<string>();
@@ -254,10 +254,9 @@ namespace SwanUnderwater.Editor
             report.msaa = mobile.msaaSampleCount; report.renderScale = mobile.renderScale; report.shadowDistance = mobile.shadowDistance;
             report.shadowCascades = mobile.shadowCascadeCount; report.shadowAtlas = mobile.mainLightShadowmapResolution;
             string clientSource = File.ReadAllText("Assets/SwanUnderwater/OceanLeaderboardClient.cs");
-            report.editorUploadGuardVerified = clientSource.Contains("public bool OfflineOnly => true;") &&
-                !clientSource.Contains("UnityWebRequest") && !clientSource.Contains("HttpClient") &&
-                typeof(OceanLeaderboardClient).GetMethod("Update", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic) == null;
-            if (!report.editorUploadGuardVerified) throw new InvalidOperationException("Public offline transport exclusion changed; review before preview.");
+            string identitySource = File.ReadAllText("Assets/SwanUnderwater/OceanLeaderboardIdentity.cs");
+            report.editorUploadGuardVerified = clientSource.Contains("!identity.IsTestIdentity") && identitySource.Contains("IsTestIdentity=true");
+            if (!report.editorUploadGuardVerified) throw new InvalidOperationException("Editor automatic-upload guard changed; review before preview.");
             report.noPageRequested = true;
             foreach (var client in Object.FindObjectsByType<OceanLeaderboardClient>(FindObjectsSortMode.None))
                 if (client.PageRequestVersion != 0 || client.IsBusy) report.noPageRequested = false;

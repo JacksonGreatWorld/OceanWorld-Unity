@@ -109,12 +109,15 @@ namespace SwanUnderwater.EditorTests
             }
             public void Enter()
             {
-                // Public clients contain no transport or signer. Suspend existing clients so
-                // this fixture cannot change unrelated local score/discovery persistence.
+                // Editor signing keys are created only under this fixture. Existing clients
+                // are also suspended; no request, score/discovery persistence or production identity is used.
                 Directory.CreateDirectory(directory);
+                using (var identity = OceanLeaderboardIdentity.Open(Path.Combine(directory, "editor-test-identity"))) Check(identity.IsTestIdentity, "fixture uses an explicit Editor test identity");
                 foreach (var client in campaign.GetComponents<OceanLeaderboardClient>())
                 {
-                    Check(client.OfflineOnly && !client.IsBusy, "existing public client has no active transport or signing task");
+                    Check(!client.IsBusy, "finish any existing local test transport before scene review");
+                    var identity = Get(client, "identity") as OceanLeaderboardIdentity;
+                    Check(identity == null || identity.IsTestIdentity, "existing Editor client cannot use a production signing identity");
                     enabled.Add(client, client.enabled);
                 }
                 enabled.Add(campaign.Naturalist, campaign.Naturalist.enabled); enabled.Add(campaign, campaign.enabled);
