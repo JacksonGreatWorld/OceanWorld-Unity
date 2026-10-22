@@ -1,0 +1,19 @@
+{
+  "scope": "README media only; early Unity gameplay recording, not current headset acceptance. Silent H.264 clip and matching GIF. Not packaged into the application.",
+  "files": [
+    {
+      "path": "images/gameplay-preview.gif",
+      "kind": "Preview excerpt, early Unity gameplay",
+      "source": "同目录完整视频2–6秒片段，480×270、8fps。",
+      "bytes": 1555158,
+      "sha256": "9376db111fe174de33a053ee4b64352497351c9cd29ff7bb1ab6e2ef35afafca"
+    },
+    {
+      "path": "videos/oceanworld-gameplay-720p.mp4",
+      "kind": "Early Unity gameplay recording",
+      "source": "2026-10-11留存的Unity-original-20s.mp4；720p H.264静音副本，去除音轨及元数据，非当前审核包验收。",
+      "bytes": 3650423,
+      "sha256": "40c3d6a99d87d65895fed825c38d9c0b5d3acc80c3e170f1370ffc36ea832a58"
+    }
+  ]
+}

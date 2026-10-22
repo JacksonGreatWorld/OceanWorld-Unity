@@ -43,3 +43,5 @@ Assets/ArtBaked/MarketReef/**/texture_*.asset filter=lfs diff=lfs merge=lfs -tex
 
 # Keep README images directly renderable by the repository web UI.
 docs/images/** -filter -diff -merge -text
+# The short, silent README clip is a directly downloadable presentation asset.
+docs/videos/oceanworld-gameplay-720p.mp4 -filter -diff -merge -text
