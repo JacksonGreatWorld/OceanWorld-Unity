@@ -25,7 +25,7 @@
 
 [![早期Unity游戏录屏动图：划水与游鱼](docs/images/gameplay-preview.gif)](https://github.com/JacksonGreatWorld/OceanWorld-Unity/raw/refs/heads/main/docs/videos/oceanworld-gameplay-720p.mp4)
 
-**[↓ 下载完整游戏录屏](https://github.com/JacksonGreatWorld/OceanWorld-Unity/raw/refs/heads/main/docs/videos/oceanworld-gameplay-720p.mp4)** · 20秒 · 720p · 静音 · 约3.7MB
+**[↓ 下载完整游戏录屏](https://github.com/JacksonGreatWorld/OceanWorld-Unity/raw/refs/heads/main/docs/videos/oceanworld-gameplay-720p.mp4)** · 20秒 · 720p · 静音 · 约3.7MB · [视频文件页](https://github.com/JacksonGreatWorld/OceanWorld-Unity/blob/main/docs/videos/oceanworld-gameplay-720p.mp4)
 
 此段为2026-10-11留存的早期Unity游戏录屏，展示划水水纹、虚拟手与生物巡游。设备和精确构建版本未记录，不作为当前2.9.8或后续版本的佩戴验收。动图取自同一视频；已去除音轨与元数据。
 
