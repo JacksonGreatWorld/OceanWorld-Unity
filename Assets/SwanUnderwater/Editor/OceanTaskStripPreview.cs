@@ -21,21 +21,26 @@ namespace SwanUnderwater.Editor
         static OceanTaskStripRunner runner;
         static OceanTaskStripPreview() { if (SessionState.GetBool(Key + "active", false)) Attach(); }
         public static string Output => SessionState.GetString(Key + "output", "");
+        public static bool PerformanceOnly => SessionState.GetBool(Key + "performanceOnly", false);
         // Separate graphical Editor, without -quit or -nographics.
-        public static void Capture()
+        public static void Capture() => Begin(false);
+        // Narrow regression: does not execute the older campaign/guide state fixture.
+        public static void CapturePerformance() => Begin(true);
+        static void Begin(bool performanceOnly)
         {
             if (!Application.isBatchMode || EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Start a fresh batch Editor in Edit Mode.");
-            string output = "Validation/iteration-25/task-strip/unity-preview";
+            string output = performanceOnly ? "Validation/performance-menu/unity-preview" : "Validation/iteration-25/task-strip/unity-preview";
             string[] args = Environment.GetCommandLineArgs();
             for (int i = 0; i < args.Length; i++)
             {
                 if (args[i] == "-quit" || args[i] == "-nographics") throw new ArgumentException("Preview owns exit and requires graphical rendering.");
-                if (args[i] == "-codexTaskStripOutput" && i + 1 < args.Length) output = args[++i];
+                if ((args[i] == "-codexTaskStripOutput" || args[i] == "-codexPerformanceMenuOutput") && i + 1 < args.Length) output = args[++i];
             }
             output = Path.GetFullPath(output); Directory.CreateDirectory(output);
             if (File.Exists(Path.Combine(output, "report.json"))) throw new IOException("Use a fresh preview directory.");
             SessionState.SetBool(Key + "hadPreference", PerformanceHud.HasVisibilityPreferenceForValidation);
             SessionState.SetBool(Key + "preference", PerformanceHud.PreferenceVisible);
+            SessionState.SetBool(Key + "performanceOnly", performanceOnly);
             SessionState.SetString(Key + "output", output); SessionState.SetString(Key + "error", "");
             SessionState.SetString(Key + "start", DateTime.UtcNow.Ticks.ToString(CultureInfo.InvariantCulture)); SessionState.SetBool(Key + "active", true);
             Attach(); EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); EditorApplication.isPlaying = true;
@@ -70,7 +75,8 @@ namespace SwanUnderwater.Editor
         [Serializable] public sealed class Report
         {
             public bool success,preferenceRestored,reusedRuntimeHud,cameraOverrideReleased;
-            public int assertions,toggleActions;
+            public int assertions,toggleActions,performancePresets;
+            public bool defaultHiddenVerified,persistentPreferenceVerified;
             public string detail;
             public string evidence="Actual production CampaignPanel, Guide and PerformanceHud in a single-camera Editor scene. Guide states use accepted State transactions; ray activation uses synthetic fresh poses through production hit/press logic. No headset tracking, stereo readability, physical comfort, timing or network claim. Preference presence/value restored on every normal/error exit.";
             public List<string> checks=new List<string>(),screenshots=new List<string>();
@@ -83,12 +89,13 @@ namespace SwanUnderwater.Editor
         {
             try
             {
-                SwanUnderwater.EditorTests.OceanCampaignGuideTests.RunAll();report.stateCases.AddRange(SwanUnderwater.EditorTests.OceanCampaignGuideTests.Cases);
+                if(OceanTaskStripPreview.PerformanceOnly)report.evidence="Actual production CampaignPanel and PerformanceHud in an isolated single-camera Editor scene. Three text-size presets, main/nested buttons, stored preference reads and HUD visibility use production UI callbacks and qualified synthetic ray pinches. In-memory level state only; no player JSON, world or network initialization. No headset tracking, restart, stereo readability, device performance or physical comfort claim. Original performance preference presence/value restored on normal/error exit.";
+                if(!OceanTaskStripPreview.PerformanceOnly){SwanUnderwater.EditorTests.OceanCampaignGuideTests.RunAll();report.stateCases.AddRange(SwanUnderwater.EditorTests.OceanCampaignGuideTests.Cases);}
                 view=new GameObject("Task strip preview camera").AddComponent<Camera>();view.transform.position=new Vector3(0,1.6f,0);view.fieldOfView=55;view.aspect=1.6f;view.nearClipPlane=.02f;view.farClipPlane=10;
                 view.clearFlags=CameraClearFlags.SolidColor;view.backgroundColor=new Color(.012f,.044f,.067f);view.GetUniversalAdditionalCameraData().allowXRRendering=false;
                 target=new RenderTexture(1536,960,24,RenderTextureFormat.ARGB32);target.Create();pixels=new Texture2D(1536,960,TextureFormat.RGB24,false);view.targetTexture=target;
                 hands=new GameObject("Disabled physical hand tracker").AddComponent<HandSwimController>();hands.enabled=false;
-                state=new OceanCampaignState();state.StartLevel(5);
+                state=new OceanCampaignState();state.StartLevel(OceanTaskStripPreview.PerformanceOnly?1:5);
                 panel=new GameObject("Production compact campaign panel").AddComponent<OceanCampaignPanel>();panel.Initialize(view,hands,state,Handle);panel.SetAvailable(true);
                 // RuntimeDiagnostics.Install automatically supplies a HUD after this empty scene loads.
                 // Borrow that process-local instance and never create another diagnostics host.
@@ -97,7 +104,14 @@ namespace SwanUnderwater.Editor
                 if(performance==null){performance=new GameObject("Production performance HUD").AddComponent<PerformanceHud>();ownsPerformance=true;}
                 Require(performance==PerformanceHud.Instance&&UnityEngine.Object.FindObjectsByType<PerformanceHud>(FindObjectsSortMode.None).Length==1,"preview reuses the sole runtime HUD without replacing its diagnostics host");
                 Require(UnityEngine.Object.FindObjectsByType<RuntimeDiagnostics>(FindObjectsSortMode.None).Length==diagnosticsCount,"preview creates no extra diagnostic singleton");
-                PerformanceHud.SetPreferenceVisible(true);cameraOverrideApplied=true;performance.SetEditorPreviewCamera(view);
+                cameraOverrideApplied=true;performance.SetEditorPreviewCamera(view);
+                if(OceanTaskStripPreview.PerformanceOnly)
+                {
+                    yield return CheckPerformanceMenu();
+                }
+                else
+                {
+                PerformanceHud.SetPreferenceVisible(true);
                 panel.OpenMenu();yield return new WaitForSecondsRealtime(.8f);
                 Require(performance.PanelVisibleForValidation,"actual performance panel appears when enabled");CheckButtons();Save("00-menu-performance-on");
                 yield return Press("toggle_performance");
@@ -127,9 +141,44 @@ namespace SwanUnderwater.Editor
                 panel.SetGuideHintForValidation(1);CheckGuide(1);Save("mixed-after-boss-fish-hint");
                 panel.ClearValidationRays();yield return new WaitForSecondsRealtime(.5f);yield return Press("menu");yield return new WaitForSecondsRealtime(.5f);
                 Require(panel.IsOpen,"thinner strip still opens via real ray/pinch gate");
+                }
             }
             finally { RestorePreviewContext(); }
-            OceanTaskStripPreview.Finish(true,"Compact action/count/time copy, all twenty initial guides, actual boss/ordered transitions and actual performance UI toggle passed with synthetic hand rays.");
+            OceanTaskStripPreview.Finish(true,OceanTaskStripPreview.PerformanceOnly?
+                "Direct main-menu performance control, nested synchronization, three text presets, actual HUD and qualified synthetic ray pinches passed; preference restored. No device or stereo claim.":
+                "Compact action/count/time copy, all twenty initial guides, actual boss/ordered transitions and actual performance UI toggle passed with synthetic hand rays.");
+        }
+        IEnumerator CheckPerformanceMenu()
+        {
+            // Exercise an absent preference, rather than assuming this Editor's previous choice.
+            // Capture/Finish preserve its presence and value on normal and error exits.
+            PerformanceHud.RestoreVisibilityPreferenceForValidation(false,false);panel.Refresh();
+            panel.OpenMenu();yield return new WaitForSecondsRealtime(.8f);
+            Require(!PerformanceHud.HasVisibilityPreferenceForValidation&&!PerformanceHud.PreferenceVisible&&!performance.PanelVisibleForValidation,"absent preference leaves actual HUD hidden by default");
+            report.defaultHiddenVerified=true;
+            for(int preset=0;preset<3;preset++)
+            {
+                panel.SetTextScaleForValidation(preset);panel.OpenMenu();yield return null;
+                CheckButtons();CheckVisibleButtonText();Require(HasButtonText("toggle_performance","性能面板：关"),"main menu exposes the off switch at text preset "+preset);
+                Save("performance-"+preset+"-main-off");
+                int actions=report.toggleActions;
+                yield return Press("toggle_performance");yield return new WaitForSecondsRealtime(.15f);
+                Require(report.toggleActions==actions+1&&PerformanceHud.HasVisibilityPreferenceForValidation&&PerformanceHud.PreferenceVisible&&performance.PanelVisibleForValidation,"main-menu qualified ray/pinch turns actual HUD on once at preset "+preset);
+                Require(HasButtonText("toggle_performance","性能面板：开"),"main switch reflects saved on preference");
+                // Getter rereads PlayerPrefs; reopening must use that value without resetting it.
+                panel.CloseMenu();yield return new WaitForSecondsRealtime(.35f);panel.OpenMenu();yield return new WaitForSecondsRealtime(.5f);
+                Require(PerformanceHud.PreferenceVisible&&HasButtonText("toggle_performance","性能面板：开")&&performance.PanelVisibleForValidation,"closing/reopening preserves the stored enabled preference");
+                report.persistentPreferenceVerified=true;Save("performance-"+preset+"-main-on");
+                yield return Press("show_comfort");yield return Press("comfort_more");
+                Require(HasButtonText("toggle_performance","性能面板：开"),"nested switch immediately shares main switch preference");
+                CheckButtons();CheckVisibleButtonText();Save("performance-"+preset+"-nested-on");
+                yield return Press("toggle_performance");
+                Require(report.toggleActions==actions+2&&!PerformanceHud.PreferenceVisible&&!performance.PanelVisibleForValidation,"nested qualified ray/pinch turns actual HUD off once");
+                Require(HasButtonText("toggle_performance","性能面板：关"),"nested switch reflects saved off preference");
+                yield return Press("back");yield return Press("back");
+                Require(panel.PageNameForDiagnostics=="Menu"&&HasButtonText("toggle_performance","性能面板：关"),"main switch synchronizes after nested change");
+                report.performancePresets++;
+            }
         }
         void Handle(string action,int level)
         {
@@ -150,12 +199,23 @@ namespace SwanUnderwater.Editor
         void CheckButtons()
         {
             var buttons=panel.GetButtonsForValidation();
-            foreach(var b in buttons)if(b.id=="leaderboard"||b.id=="toggle_performance")Require(b.rect.rect.width==298&&b.rect.rect.height==50,"new row keeps generous targets "+b.id);
+            foreach(var b in buttons)if(b.id=="leaderboard"||b.id=="show_comfort"||b.id=="toggle_performance")Require(b.rect.rect.width>=180&&b.rect.rect.height>=44,"menu options keep usable hit targets "+b.id);
             for(int i=0;i<buttons.Count;i++)for(int j=i+1;j<buttons.Count;j++)
             {
                 var a=new Vector3[4];var b=new Vector3[4];buttons[i].rect.GetWorldCorners(a);buttons[j].rect.GetWorldCorners(b);
                 Require(Mathf.Min(a[2].x,b[2].x)-Mathf.Max(a[0].x,b[0].x)<.00001f||Mathf.Min(a[2].y,b[2].y)-Mathf.Max(a[0].y,b[0].y)<.00001f,"separate menu controls "+buttons[i].id+"/"+buttons[j].id);
             }
+        }
+        void CheckVisibleButtonText()
+        {
+            Canvas.ForceUpdateCanvases();
+            foreach(var button in panel.GetButtonsForValidation())
+                foreach(Text text in button.rect.GetComponentsInChildren<Text>())
+                    if(text.gameObject.activeInHierarchy)
+                    {
+                        Require(text.preferredHeight<=text.rectTransform.rect.height+.5f,"visible button text is not vertically truncated: "+button.id);
+                        Require(text.preferredWidth<=text.rectTransform.rect.width+.5f,"visible button text fits horizontally: "+button.id);
+                    }
         }
         IEnumerator Press(string id)
         {

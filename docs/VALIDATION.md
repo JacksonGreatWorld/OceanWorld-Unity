@@ -1,3 +1,30 @@
+# 公开源码验证记录
+
+## 当前候选：2.9.11 / code304
+
+本公开源码副本已完成Unity编译及完整Editor回归。`public-regression-r1.log` 记录 `OCEAN_REGRESSION_CHECKS_PASS` 与成功退出；本次回归进程退出码为0。独立Android Gradle打包工程随后完成code304本地基线构建（Gradle退出码0）。**最终预编译APK仍在核验；没有将该APK字节绑定到此公开源码提交，安装与真实佩戴也未完成验收。**
+
+| 当前检查 | 已核实结果与边界 |
+| --- | --- |
+| Unity源码编译、完整Editor回归 | 通过；入口 `SwanUnderwater.Editor.CodexBuild.RunRegressionChecks`。 |
+| 排行榜关闭检查 | `OceanLeaderboardDisabledChecks.RunAll()` 通过1,212项，使用独立临时合成历史验证菜单、旧动作、无身份/请求任务、本地满旧队列计分、去重与成就。 |
+| 公开发布配置与Android设置 | `OceanPublicExportChecks.RunAll()` 通过10项，实际执行关闭版Guard：无配置时输入检查通过，空私有目录或有效地址配置均被拒绝，关闭时不解析注入URL。 |
+| 舒适设置与菜单UI | `OceanComfortVisualTests.RunAll()` 通过4,244项，覆盖实际UGUI、字体边界与生命周期；不代表头显观感或帧率。 |
+| 独立Android Gradle基线 | code304本地构建成功；它是独立打包工程的结果，不等于此公开Git提交与APK逐字节对应。 |
+| 最终预编译APK、安装、双目与佩戴 | APK仍在核验，其余尚未完成，不标记通过。 |
+
+上述两个排行榜相关入口均已由本次完整回归真实调用，无需将历史联网/改名测试强行运行于关闭模式。原始日志保存在仓库外，不作为公开源码或APK资源上传。
+
+- 合入排行榜关闭策略：菜单与昵称入口不再提供，客户端不创建身份任务、签名任务或网络请求；保留旧本地历史供收藏与成就使用。
+- 新的本地收集继续记录累计事实与去重，不增加待上传事件，旧队列满也不应阻塞本地玩法。
+- 保留公开版原有配置解析和身份冲突保护；关闭模式不解析地址，Android构建必须不含 `PrivateRelease` 配置。历史联网测试在此模式不运行，改为 `OceanLeaderboardDisabledChecks.RunAll()` 与公开发布检查。
+- 近鱼运动、海草受影及性能面板直接入口取自已经提交的主线；沙地、礁石、鱼材质及场景美术不包含正在试验的改动。现有图像均保留原版本标签。
+- 复查入口：`SwanUnderwater.Editor.CodexBuild.RunRegressionChecks`，以及菜单 `OceanWorld/Validation/Disabled leaderboard release`、`OceanWorld/Validation/Public leaderboard release`。实际场景可在入场、拾取和图鉴交互后调用 `OceanLeaderboardDisabledChecks.CheckInScene`，这些检查仍不代替真实手追、双目或持续性能验收。
+
+以下为2026-10-21历史联网实现的记录，**不适用于当前关闭排行榜的2.9.11发行行为**。保留记录用于说明旧代码与迁移防护的来历，不能将旧检查数、服务连通结果或装机记录当成本候选的新结果。
+
+---
+
 # 公开快照验证记录
 
 日期：2026-10-21。范围：PICO Unity前20关公开源码的联网排行榜修订。当前开放1–20关，21–100关保留永久身份和入口，但未开放。

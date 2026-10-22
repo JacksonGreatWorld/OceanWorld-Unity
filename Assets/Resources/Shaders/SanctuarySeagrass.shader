@@ -25,6 +25,8 @@ Shader "SwanUnderwater/SanctuarySeagrass"
             #pragma fragment frag
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
+            #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
@@ -96,11 +98,19 @@ Shader "SwanUnderwater/SanctuarySeagrass"
                 // alpha texture, a transparent fringe or another material/pass.
                 half rib = saturate(1.0h - abs(input.uv.x * 2.0h - 1.0h) * 6.0h);
                 albedo *= .91h + .16h * rib;
-                Light light = GetMainLight();
+                #if defined(_MAIN_LIGHT_SHADOWS_SCREEN)
+                    float4 shadowCoord = ComputeScreenPos(TransformWorldToHClip(input.positionWS));
+                #else
+                    float4 shadowCoord = TransformWorldToShadowCoord(input.positionWS);
+                #endif
+                // Read the existing reef shadow atlas at the displaced leaf position.
+                // The world-position overload fades distant shadows to full light.
+                Light light = GetMainLight(shadowCoord, input.positionWS, half4(1, 1, 1, 1));
                 half lambert = saturate(dot(normal, light.direction) * .6h + .4h);
                 half3 ambient = max(SampleSH(normal), half3(.14h, .19h, .18h));
                 half transmission = saturate(dot(-normal, light.direction)) * h * .19h;
-                half3 lit = albedo * (ambient + light.color * (lambert * .82h + transmission));
+                half direct = light.distanceAttenuation * light.shadowAttenuation;
+                half3 lit = albedo * (ambient + light.color * ((lambert * .82h + transmission) * direct));
                 float extraDepth = max(0.0, -4.3 - input.positionWS.y);
                 lit *= exp2(-extraDepth * half3(.065h, .026h, .010h));
                 float fog = InitializeInputDataFog(float4(input.positionWS, 1.0), 0.0);

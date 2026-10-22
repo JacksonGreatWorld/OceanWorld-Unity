@@ -39,6 +39,9 @@ def main():
     parser.add_argument('--apply', action='store_true', help='explicitly write missing local configuration; default only checks')
     args = parser.parse_args()
     try:
+        policy = args.project / 'Assets/SwanUnderwater/OceanReleaseFeatures.cs'
+        if policy.is_file() and re.search(r'LeaderboardsEnabled\s*=>\s*false\s*;', policy.read_text(encoding='utf-8')):
+            parser.exit(2, 'Configuration disabled for this release; no endpoint was read or written. Keep PrivateRelease absent. A future online edition requires a separate reviewed implementation.\n')
         value = args.base_url if args.base_url is not None else args.base_url_file.read_text(encoding='utf-8').strip('\r\n')
         body = config_bytes(value)
         project = args.project.resolve(strict=True)

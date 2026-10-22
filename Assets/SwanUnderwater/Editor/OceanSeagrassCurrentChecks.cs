@@ -48,8 +48,8 @@ namespace SwanUnderwater.EditorTests
                     if (material == null) material = renderer.sharedMaterial;
                     Check(renderer.sharedMaterial == material && material.passCount == 1 && material.renderQueue < 2500,
                         "the whole meadow shares one single-pass opaque material");
-                    Check(renderer.shadowCastingMode == ShadowCastingMode.Off && !renderer.receiveShadows,
-                        "leaves add no shadow map work");
+                    Check(renderer.shadowCastingMode == ShadowCastingMode.Off && renderer.receiveShadows,
+                        "leaves receive the existing main-light shadow without adding shadow-map draws");
                     Mesh mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
                     var vertices = mesh.vertices;
                     var uv = mesh.uv;

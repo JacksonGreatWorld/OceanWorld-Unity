@@ -79,7 +79,7 @@ namespace SwanUnderwater
         GameObject panelRoot, hudRoot;
         Text heading, subtitle, hudProgress, hudTime, hudHint, menuProgress, confirmText, resultText, levelPageLabel;
         Target back, close, resume, restart, targetsButton, goalPrevious, goalNext, resultExplore, resultNext, resultRetry, resultReplay, confirmAccept;
-        Target levelPrevious, levelNext, performanceToggle;
+        Target levelPrevious, levelNext, performanceToggle, menuPerformanceToggle;
         int guideHint, guideLevel = -1;
         double nextGuideHint;
         int levelPage;
@@ -203,18 +203,18 @@ namespace SwanUnderwater
         public void Refresh()
         {
             if (!initialized) return;
+#if UNITY_EDITOR
+            FullRefreshCountForValidation++;
+#endif
             var run = state.Current;
             bool openRun = run != null && OceanCampaignAvailability.IsOpen(run.level);
             if (page == Page.Targets && run != null && !openRun) { ShowUnavailableLevel(run.level); return; }
             RefreshHud();
-            performanceToggle.label.text = "性能面板：" + (PerformanceHud.PreferenceVisible ? "开" : "关");
+            string performanceLabel = "性能面板：" + (PerformanceHud.PreferenceVisible ? "开" : "关");
+            performanceToggle.label.text = performanceLabel;
+            menuPerformanceToggle.label.text = performanceLabel;
             RefreshComfort();
-            menuProgress.text = run == null ? "当前开放前" + OceanCampaignAvailability.AvailableLevelCount + "关，请选择关卡" : !openRun ? "历史进度已保留\n请选择已开放关卡开始探索" : "查看本关目标 · 已完成 " + CompletedTargets() + "/" + TotalTargets() + "\n" + CoinProgress() + " · " + (state.UnlimitedTime ? "不限时" : "剩余 " + Clock(run.remainingSeconds));
-            SetEnabled(targetsButton, openRun);
-            bool canReturn = openRun && (tutorial != null ? tutorial.Rules.AllowsMenuReturn(state.CanCollect) : state.CanCollect);
-            SetEnabled(resume, canReturn);
-            resume.label.text = run != null && !openRun ? "请先选择开放关卡" : TutorialActive ? "继续教学" : run != null && state.GoalComplete ? "继续探索" : "继续本关";
-            SetEnabled(restart, openRun); SetEnabled(close, canReturn);
+            RefreshMenuProgress(openRun);
             RefreshLevels();
             for (int i = 0; i < SpeciesCount; i++)
             {
@@ -233,6 +233,48 @@ namespace SwanUnderwater
             RefreshResult(); RefreshHeader();
         }
 
+        /// <summary>
+        /// Clock, ammunition and held-tool changes affect the compact task strip. They
+        /// must not rebuild strings and dirty graphics on every hidden menu page.
+        /// State-changing events and opening a page still call Refresh() immediately.
+        /// </summary>
+        public void RefreshProgress()
+        {
+            if (!initialized) return;
+#if UNITY_EDITOR
+            ProgressRefreshCountForValidation++;
+#endif
+            RefreshHud();
+            if (!IsOpen) return;
+            var run = state.Current;
+            bool openRun = run != null && OceanCampaignAvailability.IsOpen(run.level);
+            if (page == Page.Targets && run != null && !openRun) { ShowUnavailableLevel(run.level); return; }
+            switch (page)
+            {
+                case Page.Menu:
+                    // Read-only recovery copy is owned by SetSaveRecoveryStatus/Refresh.
+                    // A clock tick must neither overwrite it nor refresh its hidden page.
+                    if (!saveRecoveryReadOnly) RefreshMenuProgress(openRun);
+                    break;
+                case Page.Targets: if (openRun) RefreshTargets(); break;
+                case Page.Result: RefreshResult(); break;
+            }
+            // Header text belongs to the visible page; collections, achievement rows,
+            // comfort options and model previews retain their event-driven refresh.
+            RefreshHeader();
+        }
+
+        void RefreshMenuProgress(bool openRun)
+        {
+            var run = state.Current;
+            menuProgress.text = run == null ? "当前开放前" + OceanCampaignAvailability.AvailableLevelCount + "关，请选择关卡" : !openRun ? "历史进度已保留\n请选择已开放关卡开始探索" : "查看本关目标 · 已完成 " + CompletedTargets() + "/" + TotalTargets() + "\n" + CoinProgress() + " · " + (state.UnlimitedTime ? "不限时" : "剩余 " + Clock(run.remainingSeconds));
+            SetEnabled(targetsButton, openRun);
+            bool canReturn = openRun && (tutorial != null ? tutorial.Rules.AllowsMenuReturn(state.CanCollect) : state.CanCollect);
+            SetEnabled(resume, canReturn);
+            resume.label.text = run != null && !openRun ? "请先选择开放关卡" : TutorialActive ? "继续教学" : run != null && state.GoalComplete ? "继续探索" : "继续本关";
+            SetEnabled(restart, openRun); SetEnabled(close, canReturn);
+        }
+
         void BuildMenu()
         {
             Transform p = PageRoot(Page.Menu);
@@ -247,8 +289,14 @@ namespace SwanUnderwater
                 () => Confirm("restart_game", 0, "重新开始游戏", "回到第一关，重新开启冒险。\n历史最佳星级与收藏会保留。"));
             Button(p, "quit", "退出游戏", new Vector2(163, -129), new Vector2(298, 64),
                 () => Confirm("quit", 0, "退出游戏", "保存当前进度并退出海底世界？"));
-            Button(p, "leaderboard", "排行榜", new Vector2(-163, -202), new Vector2(298, 50), () => Dispatch("leaderboard", 0));
-            Button(p, "show_comfort", "舒适设置 / 教学", new Vector2(163, -202), new Vector2(298, 50), () => ShowPage(Page.Comfort));
+            bool rankings = OceanReleaseFeatures.LeaderboardsEnabled;
+            if (rankings)
+                Button(p, "leaderboard", "排行榜", new Vector2(-214, -202), new Vector2(198, 50), () => Dispatch("leaderboard", 0));
+            Button(p, "show_comfort", "设置 / 教学", new Vector2(rankings ? 0 : -163, -202),
+                new Vector2(rankings ? 198 : 298, 50), () => ShowPage(Page.Comfort));
+            menuPerformanceToggle = Button(p, "toggle_performance", "", new Vector2(rankings ? 214 : 163, -202), new Vector2(rankings ? 198 : 298, 50),
+                () => { Dispatch("toggle_performance", 0); Refresh(); ResetInput(); });
+            menuPerformanceToggle.label.fontSize = 22;
             Label(p, "Star rule", "完成目标得2星，收齐本关金币得3星；金币不代替目标", 17,
                 new Vector2(0, -249), new Vector2(700, 24)).color = Muted;
         }
@@ -1032,6 +1080,8 @@ namespace SwanUnderwater
         }
 
 #if UNITY_EDITOR
+        public int FullRefreshCountForValidation { get; private set; }
+        public int ProgressRefreshCountForValidation { get; private set; }
         public void SkipTutorialForValidation() { tutorial?.Skip(false); }
         public void DriveMenuRayForValidation(bool left, Ray ray, float strength, bool fresh = true, bool pinchReady = true)
         {

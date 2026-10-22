@@ -70,7 +70,7 @@ namespace SwanUnderwater
                 return existing;
             }
             Shader shader = Resources.Load<Shader>("Shaders/BubbleParticle");
-            Texture2D texture = Resources.Load<Texture2D>("Textures/Bubbles/bubble_ring_glowCircle_512");
+            Texture2D texture = Resources.Load<Texture2D>("Textures/Bubbles/bubble_transparent");
             if (shader == null || texture == null || sharedBubbleMaterial == null)
             {
                 Debug.LogWarning("[SanctuaryMicroLife] Existing particle resources missing; optional local life omitted.");

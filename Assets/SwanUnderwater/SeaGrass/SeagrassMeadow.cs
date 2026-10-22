@@ -307,7 +307,7 @@ namespace SwanUnderwater
             var renderer = go.AddComponent<MeshRenderer>();
             renderer.sharedMaterial = material;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
-            renderer.receiveShadows = false;
+            renderer.receiveShadows = true;
             renderer.lightProbeUsage = LightProbeUsage.Off;
             renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
             TriangleCount += chunk.indices.Count / 3;
@@ -545,7 +545,7 @@ namespace SwanUnderwater
             var go = new GameObject(mesh.name); go.transform.SetParent(parent, false);
             go.AddComponent<MeshFilter>().sharedMesh = mesh;
             var renderer = go.AddComponent<MeshRenderer>(); renderer.sharedMaterial = currentMaterial;
-            renderer.shadowCastingMode = ShadowCastingMode.Off; renderer.receiveShadows = false;
+            renderer.shadowCastingMode = ShadowCastingMode.Off; renderer.receiveShadows = true;
             renderer.lightProbeUsage = LightProbeUsage.Off; renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
             if (distant) DistantTriangleCount += geometry.indices.Count / 3;
             else TriangleCount += geometry.indices.Count / 3;

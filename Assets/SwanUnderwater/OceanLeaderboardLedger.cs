@@ -33,6 +33,7 @@ namespace SwanUnderwater
         const int MaxBytes=20000000, MaxSeen=131072;
         readonly string directory;
         readonly int maxPending;
+        readonly bool queueForUpload;
         readonly HashSet<string> seen=new HashSet<string>(StringComparer.Ordinal);
         readonly Dictionary<string,int> runs=new Dictionary<string,int>(StringComparer.Ordinal);
         readonly List<OceanLeaderboardEvent> pending=new List<OceanLeaderboardEvent>();
@@ -59,10 +60,10 @@ namespace SwanUnderwater
         long sequence;
         bool primaryVerified;
         sealed class UnsupportedSchemaException : Exception { public UnsupportedSchemaException() : base("Unsupported leaderboard schema; newer data preserved.") {} }
-        public OceanLeaderboardLedger(string directory,int maximumPending=4096)
+        public OceanLeaderboardLedger(string directory,int maximumPending=4096,bool queueForUpload=true)
         {
             if (maximumPending<1 || maximumPending>4096) throw new ArgumentOutOfRangeException(nameof(maximumPending));
-            this.directory=Path.GetFullPath(directory); maxPending=maximumPending;
+            this.directory=Path.GetFullPath(directory); maxPending=maximumPending; this.queueForUpload=queueForUpload;
             string path=Path.Combine(this.directory,FileName), backup=path+".backup";
             if (!File.Exists(path)&&!File.Exists(backup)) return;
             try { Read(path); primaryVerified=true; }
@@ -117,6 +118,7 @@ namespace SwanUnderwater
         }
         public bool SetNickname(string value)
         {
+            if(!queueForUpload)return Fail("Nickname changes are unavailable in local-only mode.");
             if (!ValidNickname(value,out string normalized)) return Fail("Nickname must contain 1–20 visible Unicode characters.");
             if (NicknameDraft==normalized && PendingNicknameId.Length>0) return true;
             if (Nickname==normalized && PendingNicknameId.Length==0)
@@ -130,13 +132,17 @@ namespace SwanUnderwater
         {
             if (seen.Contains(id)) return true;
             if (!Writable) return false;
-            if (pending.Count>=maxPending) return Fail("Offline score queue is full; keep this campaign run and retry after sync.");
+            if (queueForUpload && pending.Count>=maxPending) return Fail("Offline score queue is full; keep this campaign run and retry after sync.");
             if (seen.Count>=MaxSeen||sequence>=9007199254740990L) return Fail("Leaderboard lifetime index limit reached; preserve data for migration.");
             string previousNickname=Nickname, previousDraft=NicknameDraft, previousPending=PendingNicknameId, previousStatus=NicknameStatus, previousError=NicknameError;
             bool addedRun=type=="run_start"&&!runs.ContainsKey(run);
-            var e=new OceanLeaderboardEvent { eventId=id,sequence=++sequence,type=type,sessionId=session,runId=run,level=level,species=species,pickupId=pickup,
-                nickname=nickname,createdUtc=DateTime.UtcNow.ToString("o",CultureInfo.InvariantCulture) };
-            seen.Add(id); pending.Add(e);
+            sequence++;
+            seen.Add(id);
+            // Disabled releases retain their real lifetime totals and duplicate/run
+            // index. Old upload evidence stays untouched; new local play neither grows
+            // the outbox nor becomes blocked when a historical outbox is already full.
+            if(queueForUpload)pending.Add(new OceanLeaderboardEvent { eventId=id,sequence=sequence,type=type,sessionId=session,runId=run,level=level,species=species,pickupId=pickup,
+                nickname=nickname,createdUtc=DateTime.UtcNow.ToString("o",CultureInfo.InvariantCulture) });
             if (addedRun) runs.Add(run,level);
             if (type=="shell") ShellTotal++;
             if (type=="fish"||type=="shark") FishTotal++;
@@ -144,7 +150,7 @@ namespace SwanUnderwater
             if (type=="demo") DemoTotal++;
             if (type=="profile") { NicknameDraft=nickname; PendingNicknameId=id; NicknameStatus="pending"; NicknameError=""; }
             if (Save()) return true;
-            seen.Remove(id); pending.RemoveAt(pending.Count-1); sequence--; Nickname=previousNickname; NicknameDraft=previousDraft; PendingNicknameId=previousPending; NicknameStatus=previousStatus; NicknameError=previousError;
+            seen.Remove(id); if(queueForUpload)pending.RemoveAt(pending.Count-1); sequence--; Nickname=previousNickname; NicknameDraft=previousDraft; PendingNicknameId=previousPending; NicknameStatus=previousStatus; NicknameError=previousError;
             if (addedRun) runs.Remove(run);
             if (type=="shell") ShellTotal--;
             if (type=="fish"||type=="shark") FishTotal--;
@@ -169,6 +175,7 @@ namespace SwanUnderwater
         }
         public bool ApplyAcknowledgement(string json,ISet<string> submitted)
         {
+            if(!queueForUpload)return Fail("Online acknowledgements are unavailable in local-only mode.");
             string before=null;
             try
             {
@@ -222,6 +229,7 @@ namespace SwanUnderwater
         }
         public bool CachePage(string cursor,string json)
         {
+            if(!queueForUpload)return Fail("Leaderboard pages are unavailable in local-only mode.");
             try { if(OceanLeaderboardPage.Parse(json).IsDiscovery)throw new FormatException("Score cache cannot contain a discovery board."); }
             catch(Exception error) { return Fail("Invalid leaderboard page: "+error.Message); }
             string previous=CachedPageJson, previousCursor=CachedPageCursor;

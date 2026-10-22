@@ -132,7 +132,7 @@ namespace SwanUnderwater
             int ammo = gun != null ? gun.AmmoRemaining : -1;
             bool held = gun != null && gun.Held;
             if (second != lastSecond || ammo != lastAmmo || held != lastToolHeld)
-            { lastSecond = second; lastAmmo = ammo; lastToolHeld = held; Panel.Refresh(); }
+            { lastSecond = second; lastAmmo = ammo; lastToolHeld = held; Panel.RefreshProgress(); }
             if (playing && Time.unscaledTimeAsDouble >= nextSave) SaveNow();
             TickAchievementNotices();
         }
@@ -307,6 +307,9 @@ namespace SwanUnderwater
         public void HandleAction(string action, int level)
         {
             if (!initialized || environmentTransitioning) return;
+            // Stale/synthetic callbacks must not close the menu or pause swimming
+            // when this release does not offer the ranking feature.
+            if (action == "leaderboard" && !OceanReleaseFeatures.LeaderboardsEnabled) return;
             OceanEntry.DismissPlayableTitles();
             Debug.Log($"[CampaignUI] action={action} level={level} current={State.Current.level}");
             switch (action)
@@ -351,7 +354,7 @@ namespace SwanUnderwater
                 bool archivedRun = !OceanCampaignAvailability.IsOpen(State.Current.level);
                 if (!archivedRun) SaveNow();
                 if ((!archivedRun && !LastSaveSucceeded) || !leaderboard.PersistRun(committedScoreRun))
-                { feedback.ShowCampaignMessage("排行榜成绩暂未存入本机，请稍后重试。"); return; }
+                { feedback.ShowCampaignMessage("本地收集记录暂未保存，请稍后重试。"); return; }
             }
             environmentTransitioning = true;
             levelSwitchOperation = SwitchLevel(level);

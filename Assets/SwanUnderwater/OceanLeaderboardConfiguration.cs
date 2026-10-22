@@ -9,6 +9,7 @@ namespace SwanUnderwater
         public const string ResourcePath = "PrivateRelease/OceanLeaderboardConfig";
         public static string Resolve(string explicitBaseUrl = null)
         {
+            if(!OceanReleaseFeatures.LeaderboardsEnabled)return null;
             if(explicitBaseUrl!=null) return OceanLeaderboardProtocol.ValidateBaseUrl(explicitBaseUrl);
             var asset=Resources.Load<TextAsset>(ResourcePath);
             return asset==null?null:Parse(asset.text);

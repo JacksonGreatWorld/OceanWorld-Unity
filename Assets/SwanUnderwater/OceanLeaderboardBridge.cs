@@ -15,7 +15,7 @@ namespace SwanUnderwater
         int requestedUiVersion, requestedClientVersion;
         string requestedCursor;
         bool waitingPage, submittingNickname;
-        public bool IsOpen => panel != null && panel.IsOpen;
+        public bool IsOpen => OceanReleaseFeatures.LeaderboardsEnabled && panel != null && panel.IsOpen;
         public event Action LocalProgressChanged;
         public bool LocalProgressAvailable => client != null;
         public long LocalShellTotal => client?.LocalShellTotal ?? 0;
@@ -25,6 +25,9 @@ namespace SwanUnderwater
         public void Initialize(Camera view, HandSwimController hands, string saveDirectory, Action close)
         {
             directory = Path.Combine(saveDirectory, "Leaderboard"); onClose = close;
+            // Keep lifetime score/observation history available to achievements while
+            // omitting the leaderboard panel, keyboard and historical nickname display.
+            if(!OceanReleaseFeatures.LeaderboardsEnabled) { EnsureClient();return; }
             panel = gameObject.AddComponent<OceanLeaderboardPanel>();
             panel.Initialize(view, hands, HandleAction);
         }
@@ -40,15 +43,20 @@ namespace SwanUnderwater
         public bool PersistRun(OceanLevelRun run)
         { EnsureClient(); return scores.TryPersist(run, this); }
         public void Open()
-        { EnsureClient(); panel.Show(client.Nickname, ShortId()); }
+        {
+            if(!OceanReleaseFeatures.LeaderboardsEnabled)return;
+            EnsureClient();panel.Show(client.Nickname, ShortId());
+        }
         public void Close() { if (panel != null) panel.Close(); waitingPage = false; }
         string ShortId()
         {
+            if(!OceanReleaseFeatures.LeaderboardsEnabled)return "";
             string id = string.IsNullOrEmpty(client.PublicId) ? client.DeviceId : client.PublicId;
             return id.Length > 12 ? id.Substring(0, 12) : id;
         }
         void HandleAction(string action, string value)
         {
+            if(!OceanReleaseFeatures.LeaderboardsEnabled) { Close();return; }
             if (action == "close") { Close(); onClose?.Invoke(); return; }
             if (action == "rename")
             {
@@ -69,14 +77,12 @@ namespace SwanUnderwater
             // RefreshPage selects the correct board cache before this substitution.
             if (client.CachedPage != null && client.CachedPageCursor == requestedCursor && client.CachedPage.IsDiscovery == panel.IsDiscovery)
                 ApplyPage(client.CachedPage, !string.IsNullOrEmpty(requestedCursor), false);
-            if(client.OfflineOnly||client.IdentityMigrationRequired)
-            { panel.SetBusy(false);RefreshStatus();return; }
             waitingPage = true;
             panel.SetBusy(true); RefreshStatus();
         }
         void PageReceived()
         {
-            if (!IsOpen || !waitingPage || requestedUiVersion != panel.RequestVersion ||
+            if (!OceanReleaseFeatures.LeaderboardsEnabled || !IsOpen || !waitingPage || requestedUiVersion != panel.RequestVersion ||
                 requestedClientVersion != client.CompletedPageRequestVersion || requestedCursor != client.CachedPageCursor || client.CachedPage == null || client.CachedPage.IsDiscovery != panel.IsDiscovery) return;
             waitingPage = false;
             ApplyPage(client.CachedPage, !string.IsNullOrEmpty(requestedCursor), true);
@@ -84,6 +90,7 @@ namespace SwanUnderwater
         }
         void ApplyPage(OceanLeaderboardPage page, bool append, bool live)
         {
+            if(!OceanReleaseFeatures.LeaderboardsEnabled)return;
             var rows = new OceanLeaderboardPanel.Row[page.entries.Length];
             for (int i = 0; i < rows.Length; i++)
             {
@@ -102,7 +109,7 @@ namespace SwanUnderwater
         void RefreshStatus()
         {
             LocalProgressChanged?.Invoke();
-            if (!IsOpen || !panel.IsReady || client == null || submittingNickname) return;
+            if (!OceanReleaseFeatures.LeaderboardsEnabled || !IsOpen || !panel.IsReady || client == null || submittingNickname) return;
             panel.SetProfile(client.Nickname, ShortId());
             if (waitingPage && client.FinishedPageRequestVersion == requestedClientVersion && !string.IsNullOrEmpty(client.LastError))
             { waitingPage = false; panel.SetBusy(false); }
@@ -113,8 +120,6 @@ namespace SwanUnderwater
                 if(client.PendingDiscoveryCount>0)local+=" · 待上传 "+client.PendingDiscoveryCount;
                 if(client.DiscoveryStatus.Length>0)local+="\n"+client.DiscoveryStatus;
             }
-            else if (client.IdentityMigrationRequired) local += "\n" + client.LastError;
-            else if (client.OfflineOnly) local += "\n" + OceanLeaderboardClient.OfflineStatus;
             else if (client.RejectedEventCount > 0) local += " · 部分成绩待核查";
             else if (!string.IsNullOrEmpty(client.LastError)) local += " · 同步暂不可用";
             else if (client.PendingCount > 0) local += " · 待上传 " + client.PendingCount;

@@ -51,7 +51,7 @@ __pycache__/
 /Library
 /Packages/packages-lock.json
 
-# Private deployment endpoint; restored locally, included only in the intended player build.
+# Private deployment configuration is never a public input; the current disabled release refuses to package it.
 /Assets/Resources/PrivateRelease/
 /Assets/Resources/PrivateRelease.meta
 

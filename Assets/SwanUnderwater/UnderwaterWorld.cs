@@ -1716,7 +1716,7 @@ namespace SwanUnderwater
         {
             string name = species.ToLowerInvariant();
             float yaw = name.Contains("great_white") ? OceanFishVisualProfile.GreatWhiteMeshYawCorrection
-                : name.Contains("manta") ? 90f : 0f;
+                : name.Contains("manta") || name.Contains("flounder") ? 90f : 0f;
             if (yaw == 0f || fish.transform.Find("Species mesh alignment") != null) return;
             var children = new List<Transform>();
             foreach (Transform child in fish.transform) children.Add(child);
@@ -2673,9 +2673,11 @@ namespace SwanUnderwater
                 lc.direction = Vector3.RotateTowards(lc.direction, desired, dt * 0.75f, 0f).normalized;
                 float wantedSpeed = lc.speed * (lc.passStage > 0 ? 1.1f : 1f);
                 lc.currentSpeed = Mathf.MoveTowards(lc.currentSpeed, wantedSpeed, dt * 0.55f);
-                Vector3 displacement = lc.direction * lc.currentSpeed * dt;
+                Vector3 movedBody = OceanFishSteering.Advance(body, lc.transform.rotation, lc.direction * lc.currentSpeed,
+                    dt, 85f, false, out Quaternion heading);
+                Vector3 displacement = movedBody - body;
                 if (distance < safetyRadius && Vector3.Dot(displacement, away) < 0f)
-                    displacement = Vector3.ProjectOnPlane(displacement, away.normalized);
+                    displacement = Vector3.zero; // brake rather than skating sideways past the diver
                 // A bounding sphere includes nose/tail and shader sway. Sweep its centre against cached
                 // real reef bounds; no collider creation, per-frame allocations or rotating-pivot drift.
                 if (lc.isShark && !LargeSharkSegmentClear(body, body + displacement, lc.bodyRadius))
@@ -2683,9 +2685,8 @@ namespace SwanUnderwater
                     displacement = Vector3.up * lc.currentSpeed * dt;
                     if (!LargeSharkSegmentClear(body, body + displacement, lc.bodyRadius)) displacement = Vector3.zero;
                 }
-                Vector3 movedBody = body + displacement;
-                if (lc.direction.sqrMagnitude > 0.01f)
-                    lc.transform.rotation = Quaternion.Slerp(lc.transform.rotation, Quaternion.LookRotation(lc.direction), dt * 2f);
+                movedBody = body + displacement;
+                lc.transform.rotation = heading;
                 lc.transform.position += movedBody - LargeBodyCenter(lc);
                 body = LargeBodyCenter(lc);
                 Vector3 nose = body + lc.direction * (lc.baseScale * 0.45f);
@@ -3093,6 +3094,8 @@ namespace SwanUnderwater
 
             public void Tick(float dt, Vector3 center, Vector3 bounds, HandSwimController hands)
             {
+                if (dt <= 0f || float.IsNaN(dt) || float.IsInfinity(dt)) return;
+                dt = Mathf.Min(dt, OceanFishSteering.MaximumStep);
                 Vector3 handPos = Vector3.zero;
                 float handDistance;
                 bool handsActive = hands != null && hands.TryGetClosestActiveHand(transform.position, out handPos, out handDistance);
@@ -3149,12 +3152,11 @@ namespace SwanUnderwater
                         // Flee: sharp turn, high speed, tail flick
                         direction = Vector3.Slerp(direction, escapeDir, dt * 4f).normalized;
                         float flicker = 1f + Mathf.Sin(Time.time * 12f + phase) * 0.3f;
-                        transform.position += direction * currentSpeed * flicker * dt;
+                        AdvanceFacing(direction * currentSpeed * flicker, dt, 140f);
                         Vector3 fleeingPosition = transform.position;
                         fleeingPosition.y = Mathf.Max(fleeingPosition.y,
                             SampleTerrainHeight(fleeingPosition.x, fleeingPosition.z) + bodyClearance);
                         transform.position = fleeingPosition;
-                        ApplyRotation(dt);
                         return;
                     }
                 }
@@ -3182,24 +3184,17 @@ namespace SwanUnderwater
                 direction = Vector3.Slerp(direction, desired, dt * 0.75f).normalized;
                 float bob = Mathf.Sin(Time.time * 1.4f + phase) * 0.035f;
                 float approach = IsReefResident ? Mathf.Clamp01(targetDistance / 0.45f) : 1f;
-                transform.position += (direction * currentSpeed * approach + Vector3.up * (IsSheltered ? 0f : bob)) * dt;
+                AdvanceFacing(direction * currentSpeed * approach + Vector3.up * (IsSheltered ? 0f : bob), dt, 85f);
                 Vector3 p = transform.position;
                 p.y = Mathf.Max(p.y, SampleTerrainHeight(p.x, p.z) + bodyClearance);
                 transform.position = p;
-                ApplyRotation(dt);
             }
 
-            private void ApplyRotation(float dt)
+            private void AdvanceFacing(Vector3 desiredVelocity, float dt, float turnRate)
             {
-                if (direction.sqrMagnitude > 0.01f)
-                {
-                    Vector3 facing = upright ? Vector3.ProjectOnPlane(direction, Vector3.up) : direction;
-                    if (facing.sqrMagnitude < .0001f) return;
-                    Quaternion targetRot = Quaternion.LookRotation(facing);
-                    float turnRate = Vector3.Dot(Vector3.Cross(transform.forward, direction), Vector3.up);
-                    targetRot = targetRot * Quaternion.Euler(0f, 0f, -turnRate * 15f);
-                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, dt * 2.5f);
-                }
+                Vector3 next = OceanFishSteering.Advance(transform.position, transform.rotation, desiredVelocity,
+                    dt, turnRate, upright, out Quaternion heading);
+                transform.SetPositionAndRotation(next, heading);
             }
 
             private void PickTarget(Vector3 center, Vector3 bounds)

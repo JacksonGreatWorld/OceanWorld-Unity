@@ -76,7 +76,7 @@ namespace SwanUnderwater
                 naturalistName.text = entry.Name + " · 历史记录";
                 naturalistStatus.text = "已收藏 · 原记录保留";
                 naturalistStatus.color = Gold;
-                naturalistDetails.text = entry.Description + "\n\n本版暂停投放，不计入当前图鉴收集目标。已有观察记录与历史排行保留。";
+                naturalistDetails.text = entry.Description + "\n\n本版暂停投放，不计入当前图鉴收集目标。已有观察记录保留。";
                 if (naturalistPreview != null) naturalistPreview.SetActive(false);
                 return;
             }

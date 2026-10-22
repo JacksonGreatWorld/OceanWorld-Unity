@@ -138,12 +138,15 @@ namespace SwanUnderwater
                 float speed = state.Current.level > 5 ? state.Definition.FishSpeed : 1f;
                 float phase = target.phase + dt * .32f * speed;
                 Vector3 desired = target.anchor + FishOrbit(phase);
-                Vector3 next = Vector3.MoveTowards(target.root.position, desired, dt * .18f * speed);
+                Vector3 toward = desired - target.root.position;
+                Vector3 next = OceanFishSteering.Advance(target.root.position, target.root.rotation,
+                    toward.normalized * (.18f * speed), dt, 65f, target.Species == 5,
+                    out Quaternion heading, toward.magnitude);
+                // Clearance gates translation, not the animal's ability to finish its turn.
+                // Otherwise an old nose pointing at a reef repeatedly rejects the same step.
+                target.root.rotation = heading;
                 if (!CreatureSegmentClear(target.root.position, next, target.clearanceRadius, state.Current.level > 5)) continue;
                 target.phase = phase; target.root.position = next;
-                Vector3 tangent = new Vector3(-Mathf.Sin(phase) * .45f, .035f * 1.7f * Mathf.Cos(phase * 1.7f), Mathf.Cos(phase) * .32f);
-                if (tangent.sqrMagnitude > .00001f)
-                    target.root.rotation = Quaternion.RotateTowards(target.root.rotation, Quaternion.LookRotation(tangent), dt * 65f);
             }
         }
 
@@ -157,9 +160,15 @@ namespace SwanUnderwater
                 target.fleeCooldown = 4f + target.Species * (2f / 9f);
                 Vector3 away = Vector3.ProjectOnPlane(target.root.position - threat, Vector3.up).normalized;
                 if (away.sqrMagnitude < .1f) away = target.root.forward;
+                Vector3 forward = Vector3.ProjectOnPlane(target.root.forward, Vector3.up).normalized;
                 foreach (float angle in EscapeAngles)
                 {
-                    Vector3 candidate = target.root.position + Quaternion.AngleAxis(angle, Vector3.up) * away * .65f;
+                    Vector3 escapeHeading = Quaternion.AngleAxis(angle, Vector3.up) * away;
+                    // A short .85 s response cannot spend almost its entire duration on
+                    // an about-turn. Choose a legal lateral break the existing turn rate
+                    // can reach, rather than accelerating every fish or extending its catch lockout.
+                    if (Vector3.Dot(escapeHeading, forward) < -.1736482f) continue; // at most 100 degrees
+                    Vector3 candidate = target.root.position + escapeHeading * .65f;
                     if (!CreatureSegmentClear(target.root.position, candidate, target.clearanceRadius, true)) continue;
                     target.fleeTarget = candidate; target.fleeRemaining = .85f; target.FleeCount++; break;
                 }
@@ -167,13 +176,14 @@ namespace SwanUnderwater
             if (!target.IsFleeing) return false;
             Vector3 from = target.root.position;
             float speed = Mathf.Min(.80f, .58f * state.Definition.FishSpeed);
-            Vector3 next = Vector3.MoveTowards(from, target.fleeTarget, dt * speed);
+            Vector3 toward = target.fleeTarget - from;
+            Vector3 next = OceanFishSteering.Advance(from, target.root.rotation, toward.normalized * speed,
+                dt, 140f, target.Species == 5, out Quaternion heading, toward.magnitude);
+            target.root.rotation = heading;
             bool clear = CreatureSegmentClear(from, next, target.clearanceRadius, true);
             if (clear)
             {
                 target.root.position = next;
-                if ((next - from).sqrMagnitude > .000001f)
-                    target.root.rotation = Quaternion.RotateTowards(target.root.rotation, Quaternion.LookRotation(next - from), dt * 100f);
             }
             target.fleeRemaining = Mathf.Max(0f, target.fleeRemaining - dt);
             if (!clear || target.fleeRemaining <= 0f || Vector3.Distance(next, target.fleeTarget) < .03f)

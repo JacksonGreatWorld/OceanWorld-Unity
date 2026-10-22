@@ -23,7 +23,9 @@ namespace SwanUnderwater
         int queuedLimit=20, queuedVersion, pageRequestVersion, failedAttempts;
         bool pageQueued, initialized, destroyed, queuedDiscovery, identityConflict;
         public const string OfflineStatus="暂时离线 · 成绩和发现已保存在本机";
-        public bool OfflineOnly => string.IsNullOrEmpty(baseUrl);
+        public bool OfflineOnly => !OceanReleaseFeatures.LeaderboardsEnabled || string.IsNullOrEmpty(baseUrl);
+        const string UnavailableMessage="本版本暂未开放排行榜。";
+        bool OnlineAllowed => OceanReleaseFeatures.LeaderboardsEnabled && initialized && !destroyed && !OfflineOnly && !identityConflict;
         public bool IdentityMigrationRequired => identityConflict;
         int discoverySupport; // 0 unknown, 1 current catalog, -1 unavailable. Never drop unsupported outbox.
         int serverMaximumCampaignLevel=OceanCampaignSyncPolicy.LegacyMaximumLevel;
@@ -36,25 +38,28 @@ namespace SwanUnderwater
         readonly System.Random jitter=new System.Random();
         public event Action Changed;
         public event Action PageChanged;
-        public string DeviceId => identity?.DeviceId ?? ledger?.DeviceId ?? "";
-        public string PublicId => Profile?.publicId ?? "";
-        public string Nickname => !string.IsNullOrEmpty(ledger?.Nickname)?ledger.Nickname:Profile?.nickname??(DeviceId.Length>=6?"设备-"+DeviceId.Substring(0,6):"设备-待同步");
+        public string DeviceId => OceanReleaseFeatures.LeaderboardsEnabled ? identity?.DeviceId ?? ledger?.DeviceId ?? "" : "";
+        public string PublicId => OceanReleaseFeatures.LeaderboardsEnabled ? Profile?.publicId ?? "" : "";
+        public string Nickname => !OceanReleaseFeatures.LeaderboardsEnabled ? "" : !string.IsNullOrEmpty(ledger?.Nickname)?ledger.Nickname:Profile?.nickname??(DeviceId.Length>=6?"设备-"+DeviceId.Substring(0,6):"设备-待同步");
         public int PendingCount => ledger?.PendingCount??0;
-        public string NicknameDraft => ledger?.NicknameDraft??"";
-        public string NicknameStatus => ledger?.NicknameStatus??"idle";
-        public string NicknameError => ledger?.NicknameError??"";
+        public string NicknameDraft => OceanReleaseFeatures.LeaderboardsEnabled ? ledger?.NicknameDraft??"" : "";
+        public string NicknameStatus => OceanReleaseFeatures.LeaderboardsEnabled ? ledger?.NicknameStatus??"idle" : "disabled";
+        public string NicknameError => OceanReleaseFeatures.LeaderboardsEnabled ? ledger?.NicknameError??"" : "";
         public long LocalShellTotal => ledger?.ShellTotal??0;
         public long LocalFishTotal => ledger?.FishTotal??0;
         public long LocalCoinTotal => ledger?.CoinTotal??0;
         public long LocalScore => ledger?.Score??0;
         public long LocalDemoStarts => ledger?.DemoTotal??0;
         public long RejectedEventCount => ledger?.RejectedScoreTotal??0;
-        public bool IsBusy => worker!=null;
-        public bool Ready => initialized && ledger.Writable && identity!=null;
+        public bool IsBusy => OnlineAllowed && worker!=null;
+        public bool Ready => OnlineAllowed && ledger.Writable && identity!=null;
         public string LastError => lastError;
-        public OceanLeaderboardPage CachedPage { get; private set; }
-        public OceanLeaderboardRow Profile { get; private set; }
-        public string CachedPageCursor { get; private set; }="";
+        OceanLeaderboardPage cachedPage;
+        OceanLeaderboardRow profile;
+        string cachedPageCursor="";
+        public OceanLeaderboardPage CachedPage { get => OceanReleaseFeatures.LeaderboardsEnabled ? cachedPage : null; private set => cachedPage=value; }
+        public OceanLeaderboardRow Profile { get => OceanReleaseFeatures.LeaderboardsEnabled ? profile : null; private set => profile=value; }
+        public string CachedPageCursor { get => OceanReleaseFeatures.LeaderboardsEnabled ? cachedPageCursor : ""; private set => cachedPageCursor=value; }
         // Incremented by RefreshPage. A result is published only for the newest request.
         public int PageRequestVersion => pageRequestVersion;
         public int CompletedPageRequestVersion { get; private set; }
@@ -65,14 +70,19 @@ namespace SwanUnderwater
         public void Initialize(string url=null,string storageDirectory=null)
         {
             if(initialized) return;
-            try { baseUrl=OceanLeaderboardConfiguration.Resolve(url); }
-            catch(Exception) when(url==null)
-            { baseUrl=null;configurationError="联网暂不可用 · 成绩和发现已保存在本机"; }
+            if(OceanReleaseFeatures.LeaderboardsEnabled)
+            {
+                try { baseUrl=OceanLeaderboardConfiguration.Resolve(url); }
+                catch(Exception) when(url==null)
+                { baseUrl=null;configurationError="联网暂不可用 · 成绩和发现已保存在本机"; }
+            }
             directory=storageDirectory??Path.Combine(Application.persistentDataPath,"Leaderboard");
 #if UNITY_EDITOR
             directory=Path.Combine(directory,"editor-test");
 #endif
-            ledger=new OceanLeaderboardLedger(directory);discoveries=new OceanDiscoveryLedger(directory);initialized=true;lastError=ledger.LastError??configurationError;discoveryError=discoveries.LastError;
+            ledger=new OceanLeaderboardLedger(directory,queueForUpload:OceanReleaseFeatures.LeaderboardsEnabled);discoveries=new OceanDiscoveryLedger(directory);initialized=true;lastError=ledger.LastError??configurationError;discoveryError=discoveries.LastError;
+            // Local totals remain available; disabled releases never resolve configuration, names or keys.
+            if(!OceanReleaseFeatures.LeaderboardsEnabled) { Changed?.Invoke();return; }
             ReadProfile();
             if(ledger.CachedPageJson.Length>0)
             {
@@ -87,7 +97,7 @@ namespace SwanUnderwater
             if(!initialized)return NotInitialized();
             if(identityConflict) { Changed?.Invoke();return false; }
             // Do not touch a pre-existing ledger until its platform key has been checked.
-            if(identity==null&&(ledger.DeviceId.Length>0||discoveries.DeviceId.Length>0)) { lastError="正在核验本机排行榜身份，请稍后重试";return false; }
+            if(OceanReleaseFeatures.LeaderboardsEnabled && identity==null&&(ledger.DeviceId.Length>0||discoveries.DeviceId.Length>0)) { lastError="正在核验本机排行榜身份，请稍后重试";return false; }
             if(processSessionId==null)processSessionId=Guid.NewGuid().ToString("N");
             return Persist(()=>ledger.EnsureSession(processSessionId));
         }
@@ -98,25 +108,31 @@ namespace SwanUnderwater
         public bool RecordCoin(string runId,int eventPickupId) => EnsureSession()&&Persist(()=>ledger.RecordCoin(processSessionId,runId,eventPickupId));
         public bool RecordDiscovery(int species,int level)
         {
+            if(!initialized)return NotInitialized();
+            if(!OceanReleaseFeatures.LeaderboardsEnabled)return true;
             if(!EnsureSession())return false;
             int before=discoveries.Count;bool saved=discoveries.Record(processSessionId,species,level);
             if(!saved)discoveryError=discoveries.LastError;
             if(!saved||before!=discoveries.Count)Changed?.Invoke();return saved;
         }
-        public bool SetNickname(string value) => initialized?Persist(()=>ledger.SetNickname(value)):NotInitialized();
+        public bool SetNickname(string value)
+        { if(!OceanReleaseFeatures.LeaderboardsEnabled) { lastError=UnavailableMessage;return false; }
+          return initialized?Persist(()=>ledger.SetNickname(value)):NotInitialized(); }
         bool NotInitialized() { lastError="Leaderboard has not been initialized.";return false; }
         bool Persist(Func<bool> operation)
         {
             if(identityConflict) { Changed?.Invoke();return false; }
-            if(identity==null&&(ledger.DeviceId.Length>0||discoveries.DeviceId.Length>0)) { lastError="正在核验本机排行榜身份，请稍后重试";return false; }
-            int before=ledger.PendingCount;string priorStatus=ledger.NicknameStatus;bool success=operation();
+            if(OceanReleaseFeatures.LeaderboardsEnabled && identity==null&&(ledger.DeviceId.Length>0||discoveries.DeviceId.Length>0)) { lastError="正在核验本机排行榜身份，请稍后重试";return false; }
+            int before=ledger.PendingCount;long priorScore=ledger.Score,priorDemos=ledger.DemoTotal;string priorStatus=ledger.NicknameStatus;bool success=operation();
+            bool changed=before!=ledger.PendingCount||priorScore!=ledger.Score||priorDemos!=ledger.DemoTotal||priorStatus!=ledger.NicknameStatus;
             if(!success)lastError=ledger.LastError;
-            else if(before!=ledger.PendingCount)lastError=configurationError;
-            if(!success||before!=ledger.PendingCount||priorStatus!=ledger.NicknameStatus)Changed?.Invoke();
+            else if(changed)lastError=configurationError;
+            if(!success||changed)Changed?.Invoke();
             return success;
         }
         public void RefreshPage(string cursor="",int limit=20,bool discovery=false)
         {
+            if(!OceanReleaseFeatures.LeaderboardsEnabled) { lastError=UnavailableMessage;return; }
             if(!initialized) { NotInitialized();return; }
             if(cursor==null||cursor.Length>4096) { lastError="Invalid leaderboard cursor.";Changed?.Invoke();return; }
             queuedDiscovery=discovery;
@@ -131,10 +147,10 @@ namespace SwanUnderwater
             // Cached content is immediately usable, but never labelled as live after a new request.
             CachedPageIsLive=false;nextAttempt=0;Changed?.Invoke();
         }
-        void StartIdentity() { identityTask=Task.Run(()=>OceanLeaderboardIdentity.Open(directory)); }
+        void StartIdentity() { if(!OceanReleaseFeatures.LeaderboardsEnabled)return;identityTask=Task.Run(()=>OceanLeaderboardIdentity.Open(directory)); }
         void Update()
         {
-            if(!initialized||destroyed)return;
+            if(!OceanReleaseFeatures.LeaderboardsEnabled||!initialized||destroyed)return;
             if(identityTask!=null&&identityTask.IsCompleted)
             {
                 var completed=identityTask;identityTask=null;
@@ -189,6 +205,7 @@ namespace SwanUnderwater
         {
             // First yield ensures worker is assigned before any synchronous early return.
             yield return null;
+            if(!OnlineAllowed) { worker=null;yield break; }
             byte[] payload=null,envelope=null;
             try { payload=OceanLeaderboardProtocol.PagePayload(identity.DeviceId,cursor,limit,discovery);var signer=identity;signingTask=Task.Run(()=>signer.Sign(payload)); }
             catch(Exception error) { Backoff("Could not prepare signed page request: "+error.Message); }
@@ -201,6 +218,7 @@ namespace SwanUnderwater
             }
             if(envelope==null)
             { Debug.LogWarning("[OceanLeaderboard] page_failure http=0 signing=true");FinishedPageRequestVersion=version;worker=null;Changed?.Invoke();yield break; }
+            if(!OnlineAllowed) { worker=null;yield break; }
             request=new UnityWebRequest(baseUrl+(discovery?"/v1/discovery-board":"/v1/leaderboard"),"POST") { uploadHandler=new UploadHandlerRaw(envelope),downloadHandler=new DownloadHandlerBuffer() };
             request.SetRequestHeader("Content-Type","application/json; charset=utf-8");Configure(request);
             yield return request.SendWebRequest();
@@ -230,6 +248,7 @@ namespace SwanUnderwater
         IEnumerator Upload()
         {
             yield return null;
+            if(!OnlineAllowed) { worker=null;yield break; }
             var batch=ledger.Batch(64,serverMaximumCampaignLevel);if(batch.Count==0) { worker=null;yield break; }
             var submitted=new HashSet<string>();foreach(var e in batch)submitted.Add(e.eventId);
             byte[] payload=null;
@@ -243,6 +262,7 @@ namespace SwanUnderwater
             signingTask=null;
             if(envelope==null) { worker=null;Changed?.Invoke();yield break; }
             Debug.Log("[OceanLeaderboard] upload_attempted events="+batch.Count);
+            if(!OnlineAllowed) { worker=null;yield break; }
             request=new UnityWebRequest(baseUrl+"/v1/events","POST") { uploadHandler=new UploadHandlerRaw(envelope),downloadHandler=new DownloadHandlerBuffer() };
             request.SetRequestHeader("Content-Type","application/json; charset=utf-8");Configure(request);
             yield return request.SendWebRequest();
@@ -268,6 +288,8 @@ namespace SwanUnderwater
         IEnumerator ProbeDiscoveries()
         {
             yield return null;
+            if(!OnlineAllowed) { worker=null;yield break; }
+            if(!OnlineAllowed) { worker=null;yield break; }
             request=UnityWebRequest.Get(baseUrl+"/v1/capabilities?catalogVersion="+OceanSpeciesCatalog.CatalogVersion);Configure(request);
             yield return request.SendWebRequest();
             bool supported=false;
@@ -285,6 +307,7 @@ namespace SwanUnderwater
         IEnumerator UploadDiscoveries()
         {
             yield return null;
+            if(!OnlineAllowed) { worker=null;yield break; }
             var batch=discoveries.Batch(serverMaximumCampaignLevel);if(batch.Count==0){discoveryAttemptAfter=Time.realtimeSinceStartup+30;worker=null;yield break;}
             var submitted=new HashSet<string>();foreach(object item in batch)submitted.Add(OceanLeaderboardJson.Text(OceanLeaderboardJson.Object(item),"eventId"));
             byte[] envelope=null,payload=null;
@@ -298,6 +321,7 @@ namespace SwanUnderwater
                 signingTask=null;
             }
             if(envelope==null){discoveryAttemptAfter=Time.realtimeSinceStartup+30;worker=null;Changed?.Invoke();yield break;}
+            if(!OnlineAllowed) { worker=null;yield break; }
             request=new UnityWebRequest(baseUrl+"/v1/discoveries","POST"){uploadHandler=new UploadHandlerRaw(envelope),downloadHandler=new DownloadHandlerBuffer()};
             request.SetRequestHeader("Content-Type","application/json; charset=utf-8");Configure(request);yield return request.SendWebRequest();
             long status=request.responseCode;string body=request.downloadHandler.text;bool ok=request.result==UnityWebRequest.Result.Success&&status==200;request.Dispose();request=null;
@@ -321,7 +345,7 @@ namespace SwanUnderwater
             try { Profile=OceanLeaderboardRow.Parse(OceanLeaderboardJson.Parse(ledger.ServerProfileJson),false); }
             catch(Exception error) { lastError="Stored server profile is invalid: "+error.Message; }
         }
-        void OnApplicationPause(bool paused) { if(!paused&&initialized){nextAttempt=0;discoveryAttemptAfter=0;discoveryProbeAfter=0;} }
+        void OnApplicationPause(bool paused) { if(OceanReleaseFeatures.LeaderboardsEnabled&&!paused&&initialized){nextAttempt=0;discoveryAttemptAfter=0;discoveryProbeAfter=0;} }
         void OnDestroy()
         {
             destroyed=true;if(request!=null) { request.Abort();request.Dispose();request=null; }

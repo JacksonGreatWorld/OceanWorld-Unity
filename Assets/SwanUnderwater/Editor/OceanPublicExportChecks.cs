@@ -48,6 +48,22 @@ namespace SwanUnderwater.EditorTests
                 var picoConfig=ByteDance.PICO.XR.PXR_ProjectSetting.GetProjectConfig();
                 Check(picoConfig!=null&&picoConfig.handTracking&&picoConfig.videoSeeThrough,"PICO hand tracking and passthrough remain enabled for the existing entry and swimming controls");
                 Directory.CreateDirectory(root);
+                if(!OceanReleaseFeatures.LeaderboardsEnabled)
+                {
+                    string disabledConfig=Path.Combine(root,"PrivateRelease","OceanLeaderboardConfig.json");
+                    OceanLeaderboardReleaseGuard.ValidateReleaseConfiguration(disabledConfig);
+                    Check(true,"disabled release does not require a service address");
+                    Directory.CreateDirectory(Path.GetDirectoryName(disabledConfig));
+                    Throws(()=>OceanLeaderboardReleaseGuard.ValidateReleaseConfiguration(disabledConfig),"disabled release refuses even an empty private configuration directory");
+                    File.WriteAllText(disabledConfig,"{\"baseUrl\":\"https://example.invalid/ocean\"}");
+                    Throws(()=>OceanLeaderboardReleaseGuard.ValidateReleaseConfiguration(disabledConfig),"disabled release refuses a valid private endpoint instead of packaging it");
+                    Check(OceanLeaderboardConfiguration.Resolve("not-an-online-endpoint")==null,"disabled release never resolves an injected URL");
+                    OceanLeaderboardReleaseGuard.ValidateReleaseConfiguration(OceanLeaderboardReleaseGuard.ConfigurationFile);
+                    Check(typeof(OceanLeaderboardProtocol).GetField("ProductionBaseUrl")==null,"public source contains no production endpoint constant");
+                    MissingConfigurationChecks=true;
+                    Debug.Log("[OceanPublicExportChecks] PASS "+Assertions+" assertions; disabled release configuration absence and public Android settings only; legacy online/identity tests intentionally not executed.");
+                    return;
+                }
                 Check(OceanLeaderboardConfiguration.Parse("{\"baseUrl\":\"https://example.invalid/ocean/\"}")=="https://example.invalid/ocean","private configuration normalizes HTTPS API prefix");
                 foreach(string invalid in new[]{"{}","{\"baseUrl\":\"http://example.invalid\"}","{\"baseUrl\":\"https://user:secret@example.invalid\"}","{\"baseUrl\":\"https://example.invalid?token=secret\"}","{\"baseUrl\":\"https://example.invalid#secret\"}","{\"baseUrl\":\"https://example.invalid\",\"adminPassword\":\"fixture\"}","{\"baseUrl\":\"https://example.invalid\",\"baseUrl\":\"https://other.invalid\"}"})
                     Throws(()=>OceanLeaderboardConfiguration.Parse(invalid),"unsafe or ambiguous release configuration rejected");

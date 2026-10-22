@@ -218,6 +218,7 @@ namespace SwanUnderwater.Editor
             SwanUnderwater.EditorTests.OceanMeshCollisionTests.RunAll();
             SwanUnderwater.Editor.OceanFishVisualChecks.Run();
             SwanUnderwater.EditorTests.OceanSchoolFishMotionChecks.RunAll();
+            SwanUnderwater.EditorTests.OceanNearFishMotionChecks.RunAll();
             SwanUnderwater.EditorTests.OceanBoidTransformCacheTests.RunAll();
             SwanUnderwater.EditorTests.OceanDiagnosticLogTests.RunAll();
             SwanUnderwater.EditorTests.OceanNaturalistIntegrationChecks.RunAll();
@@ -228,7 +229,9 @@ namespace SwanUnderwater.Editor
             SwanUnderwater.EditorTests.OceanResidentDensityTests.RunAll();
             SwanUnderwater.EditorTests.OceanSharkMotionTests.RunAll();
             SwanUnderwater.EditorTests.OceanCampaignGuideTests.RunAll();
-            SwanUnderwater.EditorTests.OceanLeaderboardTests.RunAll();
+            SwanUnderwater.EditorTests.OceanCampaignProgressRefreshTests.RunAll();
+            if (OceanReleaseFeatures.LeaderboardsEnabled) SwanUnderwater.EditorTests.OceanLeaderboardTests.RunAll();
+            else SwanUnderwater.EditorTests.OceanLeaderboardDisabledChecks.RunAll();
             SwanUnderwater.EditorTests.OceanPublicExportChecks.RunAll();
             SwanUnderwater.EditorTests.OceanCampaignCreatureTests.RunAll();
             SwanUnderwater.EditorTests.OceanWaterOpticsTests.RunAll();

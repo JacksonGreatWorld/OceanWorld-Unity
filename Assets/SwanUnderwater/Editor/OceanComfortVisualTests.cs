@@ -24,18 +24,27 @@ namespace SwanUnderwater.EditorTests
         public static void RunAll()
         {
             Assertions=0;float master=AudioListener.volume;
+            bool hadPerformancePreference=PerformanceHud.HasVisibilityPreferenceForValidation;
+            bool oldPerformancePreference=PerformanceHud.PreferenceVisible;
             AutomaticOfferQualifications();
             var root=new GameObject("Isolated comfort size and teaching graphic fixture");
             try
             {
+                PerformanceHud.RestoreVisibilityPreferenceForValidation(false,false);
                 var cameraObject=new GameObject("Comfort fixture camera");cameraObject.transform.SetParent(root.transform,false);
                 var view=cameraObject.AddComponent<Camera>();view.enabled=false;view.aspect=16f/9f;view.fieldOfView=60;
                 view.transform.position=Vector3.up*1.6f;
                 var hands=root.AddComponent<HandSwimController>();hands.enabled=false;
                 var state=new OceanCampaignState();state.Save.bestStars[0]=2;state.StartLevel(1);
                 var panel=root.AddComponent<OceanCampaignPanel>();
-                panel.Initialize(view,hands,state,(action,level)=>{if(action=="resume")panel.CloseMenu();});
+                panel.Initialize(view,hands,state,(action,level)=>
+                {
+                    if(action=="resume")panel.CloseMenu();
+                    else if(action=="toggle_performance")
+                    {PerformanceHud.SetPreferenceVisible(!PerformanceHud.PreferenceVisible);panel.Refresh();}
+                });
                 panel.SetAvailable(true);panel.OpenMenu();
+                Check(!PerformanceHud.HasVisibilityPreferenceForValidation&&!PerformanceHud.PreferenceVisible,"an absent performance preference defaults to off");
                 float initialScale=panel.ExpandedRectForValidation.localScale.x;
                 var layouts=new Dictionary<Text,Layout>();
                 for(int preset=0;preset<3;preset++)
@@ -46,6 +55,7 @@ namespace SwanUnderwater.EditorTests
                     Check(Math.Abs(panel.ExpandedRectForValidation.localScale.x-initialScale*(1f+preset*.1f))<.000001f,"whole expanded panel keeps all hit regions at the same bounded size factor");
                     Check(Math.Abs(panel.GuideRectForValidation.localScale.x-.00085f*(1f+preset*.1f))<.000001f,"HUD, labels and hit area scale together");
                     foreach(var pair in layouts)Check(pair.Key.fontSize==pair.Value.Pixels && pair.Key.rectTransform.rect.size==pair.Value.Size,"text preset preserves logical glyph and line-break boxes");
+                    panel.OpenMenu();CheckMainMenuPerformance(panel,preset);
                     for(int chapter=0;chapter<20;chapter++)
                     {
                         panel.ShowLevelPageForValidation(chapter);Canvas.ForceUpdateCanvases();int rows=0;
@@ -84,11 +94,15 @@ namespace SwanUnderwater.EditorTests
                                 Check(label.preferredHeight<=label.rectTransform.rect.height+.5f,"unavailable guidance fits after scaling at preset "+preset+" level "+level);
                     }
                     panel.OpenMenu();Check(panel.ClickForValidation("show_comfort") && panel.ClickForValidation("comfort_more"),"new text/audio page is reachable by production callbacks");
+                    Check(HasButtonTitle(panel,"toggle_performance","性能面板：开"),"nested switch shares main-menu enabled preference at preset "+preset);
+                    Check(panel.ClickForValidation("toggle_performance")&&!PerformanceHud.PreferenceVisible&&HasButtonTitle(panel,"toggle_performance","性能面板：关"),"nested switch stores off and refreshes its title at preset "+preset);
                     Canvas.ForceUpdateCanvases();
                     foreach(var label in panel.GetComponentsInChildren<Text>())if(label.gameObject.activeInHierarchy)
                         Check(label.preferredHeight<=label.rectTransform.rect.height+.5f,"ComfortAudio visible text does not truncate at preset "+preset+": "+label.name);
                     int categoryButtons=0;foreach(var button in panel.GetButtonsForValidation())if(button.id.StartsWith("comfort_audio_",StringComparison.Ordinal)&&button.enabled)categoryButtons++;
                     Check(categoryButtons==3,"all three independent sound categories have live UI controls");
+                    panel.OpenMenu();
+                    Check(HasButtonTitle(panel,"toggle_performance","性能面板：关"),"main-menu switch reflects nested off choice at preset "+preset);
                 }
                 panel.SetTextScaleForValidation(0);
                 var graphic=root.AddComponent<OceanTutorialVisual>();graphic.Begin(view,Resources.Load<Font>("Treasure/TreasureFont"));
@@ -105,11 +119,41 @@ namespace SwanUnderwater.EditorTests
                 Check(graphic.DemoSecondsForValidation==0f,"repeated lesson starts with a fresh visual timeline");
                 graphic.Close();
             }
-            finally{AudioListener.volume=master;UnityEngine.Object.DestroyImmediate(root);}
+            finally
+            {
+                AudioListener.volume=master;UnityEngine.Object.DestroyImmediate(root);
+                PerformanceHud.RestoreVisibilityPreferenceForValidation(hadPerformancePreference,oldPerformancePreference);
+            }
             Debug.Log("[OceanComfortVisualTests] PASS "+Assertions+" assertions; actual UGUI/font/projection/lifecycle, no headset claim.");
         }
         static bool HasText(OceanCampaignPanel panel,string value)
         {foreach(var label in panel.GetComponentsInChildren<Text>())if(label.gameObject.activeInHierarchy&&label.text.Contains(value))return true;return false;}
+        static bool HasButtonTitle(OceanCampaignPanel panel,string id,string title)
+        {foreach(var button in panel.GetButtonsForValidation())if(button.id==id&&button.enabled&&button.title==title)return true;return false;}
+        static void CheckMainMenuPerformance(OceanCampaignPanel panel,int preset)
+        {
+            Check(HasButtonTitle(panel,"toggle_performance","性能面板：关"),"performance off control is directly visible on the main menu at preset "+preset);
+            var buttons=panel.GetButtonsForValidation();int bottomOptions=0;
+            foreach(var button in buttons)
+                if(button.id=="leaderboard"||button.id=="show_comfort"||button.id=="toggle_performance")
+                {
+                    bottomOptions++;Check(button.enabled&&button.rect.rect.width>=180&&button.rect.rect.height>=44,"main-menu secondary option has a usable hit target: "+button.id);
+                    foreach(var text in button.rect.GetComponentsInChildren<Text>())if(text.gameObject.activeInHierarchy)
+                        Check(text.preferredWidth<=text.rectTransform.rect.width+.5f&&text.preferredHeight<=text.rectTransform.rect.height+.5f,"main-menu secondary label fits at text preset "+preset+": "+button.id);
+                }
+            Check(bottomOptions==(OceanReleaseFeatures.LeaderboardsEnabled?3:2),
+                "main menu exposes the released options and retains direct performance control");
+            if(!OceanReleaseFeatures.LeaderboardsEnabled)
+                Check(!panel.ClickForValidation("leaderboard"),"this release has no reachable ranking button");
+            for(int i=0;i<buttons.Count;i++)for(int j=i+1;j<buttons.Count;j++)
+            {
+                var a=new Vector3[4];var b=new Vector3[4];buttons[i].rect.GetWorldCorners(a);buttons[j].rect.GetWorldCorners(b);
+                Check(Mathf.Min(a[2].x,b[2].x)-Mathf.Max(a[0].x,b[0].x)<.00001f||Mathf.Min(a[2].y,b[2].y)-Mathf.Max(a[0].y,b[0].y)<.00001f,"main-menu buttons do not overlap at text preset "+preset+": "+buttons[i].id+"/"+buttons[j].id);
+            }
+            Check(panel.ClickForValidation("toggle_performance")&&PerformanceHud.HasVisibilityPreferenceForValidation&&PerformanceHud.PreferenceVisible&&HasButtonTitle(panel,"toggle_performance","性能面板：开"),"main-menu click stores enabled preference and refreshes title at preset "+preset);
+            panel.CloseMenu();panel.OpenMenu();
+            Check(HasButtonTitle(panel,"toggle_performance","性能面板：开")&&PerformanceHud.PreferenceVisible,"stored performance choice survives menu reopening at preset "+preset);
+        }
         public static void CheckProjection(OceanTutorialVisual graphic,Camera camera)
         {
             foreach(var rect in graphic.GraphicRectForValidation.GetComponentsInChildren<RectTransform>())

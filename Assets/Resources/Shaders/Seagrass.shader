@@ -25,6 +25,8 @@ Shader "SwanUnderwater/Seagrass"
             #pragma fragment frag
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
+            #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
+            #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
 
@@ -82,12 +84,20 @@ Shader "SwanUnderwater/Seagrass"
                 half3 normal = normalize(input.normalWS) * IS_FRONT_VFACE(frontFace, 1.0h, -1.0h);
                 half height = saturate(input.uv.y);
                 half3 albedo = lerp(_RootColor.rgb, _TipColor.rgb, smoothstep(0.05h, 0.95h, height)) * input.tint;
-                Light light = GetMainLight();
+                #if defined(_MAIN_LIGHT_SHADOWS_SCREEN)
+                    float4 shadowCoord = ComputeScreenPos(TransformWorldToHClip(input.positionWS));
+                #else
+                    float4 shadowCoord = TransformWorldToShadowCoord(input.positionWS);
+                #endif
+                // Reuse the reef's main-light atlas. This overload also applies URP's
+                // distance fade; ambient bounce stays visible below an overhang.
+                Light light = GetMainLight(shadowCoord, input.positionWS, half4(1, 1, 1, 1));
                 half lambert = saturate(dot(normal, light.direction) * 0.65h + 0.35h);
                 half3 ambient = max(SampleSH(normal), half3(0.11h, 0.16h, 0.16h));
                 // A little diffuse transmission gives thin leaf tips colour without alpha blending.
                 half transmission = saturate(dot(-normal, light.direction)) * height * 0.12h;
-                half3 lit = albedo * (ambient + light.color * (lambert * 0.8h + transmission));
+                half direct = light.distanceAttenuation * light.shadowAttenuation;
+                half3 lit = albedo * (ambient + light.color * ((lambert * 0.8h + transmission) * direct));
                 // URP 17 computes fog from each eye's view depth; use the same RenderSettings fog as the seabed.
                 float fog = InitializeInputDataFog(float4(input.positionWS, 1.0), 0.0);
                 return half4(MixFog(lit, fog), 1.0h);

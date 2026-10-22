@@ -110,7 +110,7 @@ namespace SwanUnderwater
 
         string AchievementSummary()
         {
-            if (achievementJournal == null) return "成就记录准备中 · 自动解锁，不增加排行积分";
+            if (achievementJournal == null) return "成就记录准备中 · 自动解锁并保存在本机";
             int count = achievementJournal.CurrentUnlockedCount;
             string history = achievementJournal.HistoricalUnlockedCount > 0 ? " · 历史荣誉+" + achievementJournal.HistoricalUnlockedCount : "";
             string pagination = "第" + (achievementPage + 1) + "/" + AchievementPageCount + "页";
