@@ -1,6 +1,13 @@
 {
-  "scope": "README media only; early Unity gameplay recording, not current headset acceptance. Silent H.264 clip and matching GIF. Not packaged into the application.",
+  "scope": "README presentation assets only; brand concept art and explicitly labeled early gameplay. Not packaged into the application or a new APK release.",
   "files": [
+    {
+      "path": "images/ocean-world-poster.jpg",
+      "kind": "Brand concept poster",
+      "source": "基于用户提供的海报，经AI辅助排版扩展及尺寸适配的横版概念海报；不代表游戏截图。",
+      "bytes": 1508214,
+      "sha256": "85f6ac1ef89c2f8dc67a60ec1cf92a843956ad03db4374d1d2f5816e8be0c07f"
+    },
     {
       "path": "images/gameplay-preview.gif",
       "kind": "Preview excerpt, early Unity gameplay",

@@ -2,7 +2,11 @@
 
 **用双手划过水流，穿行珊瑚之间，把海洋收藏进自己的图鉴。**
 
-<p align="center"><img src="docs/images/ocean-world.png" width="420" alt="海底世界品牌插画"></p>
+![海底世界横版概念海报](docs/images/ocean-world-poster.jpg)
+
+*基于用户提供的海报，经AI辅助排版扩展的品牌概念图；实际游戏画面见下方。*
+
+**四章二十关 · 自然手势潜游 · 海洋收藏 · 隐藏金币 · 鲨鱼挑战**
 
 这是《海底世界》的 **PICO Unity 公开源码快照**，以 2.9.8 / code301 的前20关版本为基础。当前开放第1–20关，第21–100关保留历史身份及列表入口，点击提示“未开放，敬请期待”。原生 Spatial SDK 和 Apple Vision Pro 工程分别维护，不包含在本仓库中。
 
@@ -16,7 +20,6 @@
 
 ![第六关珊瑚秘境，2.9.8 Editor画面](docs/images/coral-sanctuary-v2.9.8.png)
 
-![珊瑚礁与海草，2.8.5画面基线](docs/images/coral-scale-v2.8.5.png)
 
 ### 看一段真实潜游
 
@@ -39,6 +42,19 @@
 ![贝壳图鉴模型的Editor展示排列](docs/images/shell-collection.png)
 
 上图为了对照模型而集中排列贝壳；游玩时它们分散在沙地、珊瑚与草丛中。
+
+<details>
+<summary>更多画面：海龟、早期礁谷与应用插画</summary>
+
+![海龟与礁谷，既有Unity Editor画面](docs/images/marine-turtle-v2.8.9.png)
+
+![珊瑚礁与海草，2.8.5画面基线](docs/images/coral-scale-v2.8.5.png)
+
+<p align="center"><img src="docs/images/ocean-world.png" width="260" alt="海底世界品牌插画"></p>
+
+*以上保留历史Editor画面与品牌插画，供了解模型与美术演进；不作为当前头显效果与性能验收。*
+
+</details>
 
 <a id="chapters"></a>
 
