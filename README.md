@@ -59,7 +59,7 @@ Android构建使用 **IL2CPP / ARM64 / OpenGLES3**。原生Spatial SDK与Spatial
 
 ```sh
 git lfs install
-git clone https://github.com/alecchan2015/OceanWorld-Unity.git
+git clone https://github.com/JacksonGreatWorld/OceanWorld-Unity.git
 cd OceanWorld-Unity
 git lfs pull
 ```
