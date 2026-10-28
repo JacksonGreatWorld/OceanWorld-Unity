@@ -81,6 +81,8 @@ namespace SwanUnderwater.Editor
             public List<PoseRecord> poses=new List<PoseRecord>(); public List<TextureRecord> textures=new List<TextureRecord>();
         }
         [Serializable] public sealed class Report {
+            public bool publicationProjection;
+            public string sourceReportSha256, publicationScope;
             public int schemaVersion=1; public string tool="OceanMarineCompanionBake",utc,unity,directory,state,error;
             public string boundary="Native animated resource admission only. CPU posed URP stills are not runtime/headset animation acceptance. Turtle and dolphin are not fish or new catalog discoveries.";
             public bool success; public int finalizationTicks; public List<AnimalReport> animals=new List<AnimalReport>();
@@ -399,6 +401,26 @@ namespace SwanUnderwater.Editor
                 EditorSceneManager.ClosePreviewScene(scene);foreach(Mesh mesh in meshes)if(mesh!=null)Object.DestroyImmediate(mesh);
                 if(target!=null){target.Release();Object.DestroyImmediate(target);}if(pixels!=null)Object.DestroyImmediate(pixels);
             }
+        }
+
+        /// <summary>Verify the published projection and every owned output, without re-admitting omitted download archives.
+        /// Retains the original measured model, texture, pose and animation gates; performs no new sampling or writes.</summary>
+        public static void ValidatePublishedAssets()
+        {
+            Require(pending == null, "Admission is still finalizing.");
+            Require(File.Exists(Portable) && Hash(Portable) == "45ff7c2823f3789a922f7a0281348911cc6a06f8cca46411cacf5fce68c1cb29",
+                "Missing or changed published admission projection.");
+            Report report = JsonUtility.FromJson<Report>(File.ReadAllText(Portable));
+            Require(report != null && report.publicationProjection &&
+                report.sourceReportSha256 == "eadd3662595adbcb62a871a026a430a19b812eb2d47192d632f0074b9cae90dd",
+                "Receipt must identify the exact original admission as a published projection.");
+            Require(report.tool == "OceanMarineCompanionBake", "Published receipt tool differs.");
+            Require(report.success && report.state == "admitted" && report.after != null && report.after.Count > 0,
+                "Published projection is not a completed admission.");
+            VerifyFiles(report.after);
+            Require(Same(report.after, Snapshot(OwnedFiles())), "Published owned output roster changed.");
+            ValidateOutputs(report);
+            Debug.Log("OceanMarineCompanionBake PUBLISHED_ASSETS_PASS: sealed original output bytes and model/texture/animation gates; source download archives and headset acceptance are not revalidated.");
         }
 
         public static void ValidateForBuild()

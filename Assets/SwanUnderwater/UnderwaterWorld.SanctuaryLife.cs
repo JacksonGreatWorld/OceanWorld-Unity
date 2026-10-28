@@ -251,7 +251,7 @@ namespace SwanUnderwater
             if (!BuildingSanctuary || !sanctuaryPatrols.TryGetValue(school, out SanctuaryPatrol patrol)) return false;
             Vector3 threat = player;
             bool threatened = (school.center - player).sqrMagnitude < 2.2f * 2.2f;
-            if (handController != null && handController.TryGetClosestActiveHand(school.center,
+            if (WildlifeHandResponsesAllowed(handController) && handController.TryGetClosestActiveHand(school.center,
                 out Vector3 hand, out float handDistance) && handDistance < 3f * 3f)
             { threat = hand; threatened = true; }
             StepSanctuaryPatrol(school, patrol, threat, threatened, dt);

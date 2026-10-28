@@ -116,10 +116,29 @@ namespace SwanUnderwater.EditorTests
             for (int zone = 1; zone < OceanCoralSanctuary.ExplorationZones.Count; zone++)
             {
                 Vector2 home = origin + OceanCoralSanctuary.ExplorationZones[zone].offset;
-                int count = 0;
-                foreach (Vector2 root in meadow.RootPositions) if (Vector2.Distance(root, home) < 26f) count++;
+                int count = 0,routeShoulder=0;
+                foreach (Vector2 root in meadow.RootPositions)
+                {
+                    if(Vector2.Distance(root,home)>=26f)continue;
+                    count++;
+                    float shoulder=DistanceToRoute(root-origin,OceanCoralSanctuary.ExplorationRouteOffsets);
+                    if(shoulder>=2.199f&&shoulder<=7f)routeShoulder++;
+                }
                 Check(count >= 80, "outer region " + zone + " retains a meaningful rooted stand");
+                Check(routeShoulder>=18,"outer region "+zone+" has visible route-side ecology outside the clear swim lane");
+                Debug.Log($"[SeagrassRouteShoulder] zone={zone}, roots={routeShoulder}, regionalRoots={count}");
             }
+            Check(meadow.RouteEdgeRootPositions.Count>=180,"an actual bounded portion of the existing tuft budget reaches the outer journey");
+            float shoulderMinimum=float.PositiveInfinity,shoulderMaximum=0;
+            foreach(Vector2 point in meadow.RouteEdgeRootPositions)
+            {
+                float clearance=Mathf.Min(
+                    DistanceToRoute(point-origin,OceanCoralSanctuary.ExplorationRouteOffsets),
+                    DistanceToRoute(point-origin,OceanCoralSanctuary.ExplorationShortcutOffsets));
+                Check(clearance>=2.199f,"new route-side roots leave the full resting/current canopy outside the swimming lane");
+                shoulderMinimum=Mathf.Min(shoulderMinimum,clearance);shoulderMaximum=Mathf.Max(shoulderMaximum,clearance);
+            }
+            Debug.Log($"[SeagrassRouteBudget] routeSideTufts={meadow.RouteEdgeRootPositions.Count}/{meadow.TuftCount}, rootClearance={shoulderMinimum:F3}..{shoulderMaximum:F3}m");
             Check(material.GetFloat("_ValidationTimeEnabled") == 0f, "Editor time override starts disabled");
             try
             {

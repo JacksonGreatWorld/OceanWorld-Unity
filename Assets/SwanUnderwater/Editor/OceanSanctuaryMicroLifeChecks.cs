@@ -18,6 +18,21 @@ namespace SwanUnderwater.EditorTests
         public static int RunAll()
         {
             assertions = 0;
+            Vector3 reference=OceanSanctuaryMicroLife.SuspendedCurrentVelocity(Vector3.zero,0);
+            for(int time=0;time<=120;time++)
+            {
+                foreach(Vector3 anchor in new[]{Vector3.zero,new Vector3(-65,2,20),new Vector3(79,2,3)})
+                {
+                    Vector3 flow=OceanSanctuaryMicroLife.SuspendedCurrentVelocity(anchor,time*.25f);
+                    Check(flow.magnitude>=.045f&&flow.magnitude<=.112f,"suspended flow remains bounded in metres per second");
+                    Check(Vector3.Dot(flow,new Vector3(.84f,0,.543f))>.05f,
+                        "slow particles share the existing grass stream axis without abrupt reversal");
+                    Check((flow-OceanSanctuaryMicroLife.SuspendedCurrentVelocity(anchor,time*.25f+.25f)).magnitude<.009f,
+                        "four-Hz current refresh is gradual between native simulation steps");
+                }
+            }
+            Check((reference-OceanSanctuaryMicroLife.SuspendedCurrentVelocity(Vector3.zero,2f)).magnitude>.005f,
+                "a real low-frequency surge replaces constant straight-line particle drift");
             var parent = new GameObject("Isolated sanctuary micro-life validation");
             var observer = new GameObject("Isolated micro-life observer");
             Material borrowed = null;
@@ -51,6 +66,20 @@ namespace SwanUnderwater.EditorTests
                 Check(life.ActiveRendererCount > 0 && life.ActiveRendererCount <= OceanSanctuaryMicroLife.MaximumActiveRenderers,
                     "near passage has active content within renderer ceiling");
                 Check(life.ActiveParticleBudget <= OceanSanctuaryMicroLife.MaximumActiveParticles,"simultaneous particle budget bounded");
+                var alternate=new GameObject("Isolated art observer");alternate.transform.SetParent(parent.transform,false);
+                alternate.transform.position=new Vector3(1000,40,-1000);
+                Transform original=life.ObserverForValidation;
+                try
+                {
+                    life.SetObserverForValidation(alternate.transform);
+                    Check(life.ObserverForValidation==alternate.transform&&life.ActiveRendererCount==0,
+                        "art observer swaps only proximity selection and clears distant simulation");
+                    for(int i=0;i<systems.Length;i++)Check(systems[i].transform.position==anchors[i],
+                        "art observer cannot recenter fixed world anchors");
+                }
+                finally {life.SetObserverForValidation(original);}
+                Check(life.ObserverForValidation==observer.transform&&life.ActiveRendererCount>0,
+                    "art capture restores the actual viewer and bounded nearby patches");
                 observer.transform.SetPositionAndRotation(new Vector3(1000,40,-1000),Quaternion.Euler(0,145,0));
                 life.RefreshVisibility();
                 Check(life.ActiveRendererCount == 0 && life.ActiveParticleBudget == 0,"remote content stops instead of filling the full distant view");

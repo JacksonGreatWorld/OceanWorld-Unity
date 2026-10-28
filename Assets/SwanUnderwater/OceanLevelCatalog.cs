@@ -22,6 +22,9 @@ namespace SwanUnderwater
         public readonly float MechanicIntensity;
         public readonly string MechanicHint;
         public bool RequiresShark => SharkHits > 0;
+        // Published collection goals and historical stars stay authoritative. These
+        // small exploration activities can be played before or after the main goal.
+        public bool MechanicOptional => Level <= OceanLevelCatalog.LegacyLevelCount && Mechanic != OceanMechanicKind.None;
         public int Chapter => (Level - 1) / 5;
 
         internal OceanLevelDefinition(int level, string name, string brief, int minutes, int shells,
@@ -56,19 +59,29 @@ namespace SwanUnderwater
             new OceanLevelDefinition(3, "珊瑚伙伴", "找到三种鱼和两种贝壳", 20, 3, 7, 1, 8f, 1f, 0f),
             new OceanLevelDefinition(4, "鱼群巡游", "辨认并抓到四种指定鱼", 20, 0, 15, 1, 8f, 1f, 0f),
             new OceanLevelDefinition(5, "深海挑战", "找到渔枪，任一鲨鱼单独命中十次再抓取", 0, 0, 0, 1, 8f, 1f, 0f, 10),
-            new OceanLevelDefinition(6, "珊瑚秘境", "穿过天然礁拱，寻找三种贝壳、三种鱼和隐藏金币", 18, M(2,4,6), M(0,1,4), 2, 8.5f, 1.02f, .65f),
+            new OceanLevelDefinition(6, "珊瑚秘境", "穿过天然礁拱，寻找三种贝壳、三种鱼和隐藏金币", 18, M(2,4,6), M(0,1,4), 2, 8.5f, 1.02f, .65f,
+                mechanic:OceanMechanicKind.RingRace, mechanicTarget:3, mechanicIntensity:.75f,
+                mechanicHint:"可选支线 · 沿沙谷划水，依次穿过三个气泡环"),
             new OceanLevelDefinition(7, "草海捉迷藏", "在草丛寻找四种贝壳和三种鱼", 17, M(5,7,8,9), M(2,4,5), 2, 10f, 1.06f, .8f),
             new OceanLevelDefinition(8, "珊瑚接力", "按图鉴顺序抓四种鱼，再找两种贝壳", 16, M(1,3), M(0,1,2,4), 2, 10.5f, 1.10f, .9f, orderedFish:true),
-            new OceanLevelDefinition(9, "暮色识鱼", "寻找五种鱼和三种贝壳，辨认比目鱼", 15, M(4,6,8), M(3,4,5,6,7), 2, 11f, 1.14f, 1f),
+            new OceanLevelDefinition(9, "暮色识鱼", "寻找五种鱼和三种贝壳，辨认比目鱼", 15, M(4,6,8), M(3,4,5,6,7), 2, 11f, 1.14f, 1f,
+                mechanic:OceanMechanicKind.Observation, mechanicTarget:2, mechanicIntensity:.75f,
+                mechanicHint:"可选支线 · 张手稳定观察蓝倒吊与小丑鱼，再捏合记录"),
             new OceanLevelDefinition(10, "礁堡试炼", "收集目标后挑战鲨鱼，命中十一次", 15, M(2,5,9), M(2,4), 2, 11.5f, 1.18f, 1f, 11),
             new OceanLevelDefinition(11, "深蓝图鉴", "寻找六种鱼和四种贝壳，扩大探索范围", 14, M(0,3,6,8), M(0,1,2,3,4,5), 3, 12f, 1.20f, 1.1f),
             new OceanLevelDefinition(12, "追光鱼阵", "按顺序抓六种鱼，收集三种贝壳", 13, M(3,7,9), M(1,2,4,5,6,8), 3, 12.5f, 1.23f, 1.2f, orderedFish:true),
             new OceanLevelDefinition(13, "沙海潜踪", "搜寻六种鱼和五种贝壳，留意沙地伪装", 12, M(2,4,5,8,9), M(4,5,6,7,8,9), 3, 13f, 1.26f, 1.3f),
-            new OceanLevelDefinition(14, "古礁密码", "按顺序找六种贝壳，并抓五种鱼", 12, M(0,2,4,6,8,9), M(0,3,5,7,9), 3, 13.5f, 1.29f, 1.4f, orderedShell:true),
+            new OceanLevelDefinition(14, "古礁密码", "按顺序找六种贝壳，并抓五种鱼", 12, M(0,2,4,6,8,9), M(0,3,5,7,9), 3, 13.5f, 1.29f, 1.4f, orderedShell:true,
+                mechanic:OceanMechanicKind.RunePuzzle, mechanicTarget:1, mechanicIntensity:.75f,
+                mechanicHint:"可选支线 · 记住三次发光顺序，再依次捏合礁石符文"),
             new OceanLevelDefinition(15, "蓝渊守卫", "四鱼四贝与鲨鱼，需命中十二次", 12, M(1,3,5,7), M(1,3,5,6), 3, 14f, 1.32f, 1.4f, 12),
-            new OceanLevelDefinition(16, "洋流竞逐", "按顺序抓七种鱼，寻找五种贝壳", 11, M(0,1,4,7,9), M(0,1,2,4,5,6,7), 4, 14.5f, 1.35f, 1.5f, orderedFish:true),
+            new OceanLevelDefinition(16, "洋流竞逐", "按顺序抓七种鱼，寻找五种贝壳", 11, M(0,1,4,7,9), M(0,1,2,4,5,6,7), 4, 14.5f, 1.35f, 1.5f, orderedFish:true,
+                mechanic:OceanMechanicKind.CurrentRiding, mechanicTarget:3, mechanicIntensity:.75f,
+                mechanicHint:"可选支线 · 到导流叶附近，张手指向并划动，引导三段洋流"),
             new OceanLevelDefinition(17, "无声猎手", "七种鱼与七种贝壳，贝壳按顺序收集", 11, M(1,2,3,5,7,8,9), M(1,2,3,5,6,7,9), 4, 15f, 1.38f, 1.6f, orderedShell:true),
-            new OceanLevelDefinition(18, "深海大巡游", "抓齐十种鱼，再收集六种贝壳", 10, M(2,3,4,6,8,9), 1023, 4, 15.5f, 1.41f, 1.7f),
+            new OceanLevelDefinition(18, "深海大巡游", "抓齐十种鱼，再收集六种贝壳", 10, M(2,3,4,6,8,9), 1023, 4, 15.5f, 1.41f, 1.7f,
+                mechanic:OceanMechanicKind.Escort, mechanicTarget:2, mechanicIntensity:.75f,
+                mechanicHint:"可选支线 · 张手引导海龟，分两段护送到安全圈"),
             new OceanLevelDefinition(19, "失落宝库", "按顺序抓十种鱼，收齐十种贝壳", 10, 1023, 1023, 4, 16f, 1.44f, 1.8f, orderedFish:true),
             new OceanLevelDefinition(20, "深海之冠", "十鱼十贝终极探索，鲨鱼需命中十四次", 10, 1023, 1023, 5, 17f, 1.48f, 1.9f, 14)
         };

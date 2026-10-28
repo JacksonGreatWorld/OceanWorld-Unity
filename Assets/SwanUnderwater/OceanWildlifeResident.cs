@@ -11,6 +11,12 @@ namespace SwanUnderwater
         float cruiseSpeed=.22f, orbitAngularSpeed=.22f, verticalSway=.055f, blockedRetarget;
         OceanFishMotion motion;
         Transform ownedEnvironment;
+        Camera playerView;
+        HandSwimController playerHands;
+        OceanCampaignController campaign;
+        bool contextResolved;
+        float proximityTimer, avoidanceRemaining, avoidanceCooldown;
+        Vector3 avoidanceOffset, avoidanceTarget;
         readonly List<Bounds> nearbySolids=new List<Bounds>();
         public int CachedSolidCount => nearbySolids.Count;
         SkinnedMeshRenderer nativeSkin;
@@ -42,6 +48,8 @@ namespace SwanUnderwater
         {
             world = owner; home = transform.position; radius = orbit; clearance = Mathf.Max(.12f, length * .18f);
             phase = seed * 1.37f;
+            contextResolved=false;playerView=null;playerHands=null;campaign=null;
+            avoidanceOffset=avoidanceTarget=Vector3.zero;avoidanceRemaining=avoidanceCooldown=proximityTimer=0f;
             ownedEnvironment=owner.ActiveEnvironmentRoot;
             CacheNearbySolids();
             if (!authoredAnimation) motion = new OceanFishMotion(gameObject, length);
@@ -74,14 +82,22 @@ namespace SwanUnderwater
             orbitAngularSpeed=Mathf.Clamp(angularSpeed,.04f,.8f);
             verticalSway=Mathf.Clamp(verticalAmplitude,0f,.35f);
         }
-        void Update()
+        void Update() => TickResident(Time.deltaTime);
+        void TickResident(float elapsed)
         {
             if (world == null || !world.IsReady || ownedEnvironment == null || !ownedEnvironment.gameObject.activeInHierarchy) return;
-            float dt = Time.deltaTime;
+            float dt = elapsed;
             if(!Finite(dt)||dt<=0f)return;
             dt=Mathf.Min(dt,.05f);phase += dt * orbitAngularSpeed;
             blockedRetarget=Mathf.Max(0f,blockedRetarget-dt);
-            Vector3 desired = home + OrbitOffset(phase);
+            ResolvePlayerContext();
+            bool readable=InteractionContextReadable();
+            proximityTimer=Mathf.Max(0f,proximityTimer-dt);
+            Vector3 threat=Vector3.zero;
+            bool approaching=readable&&proximityTimer<=0f&&TryProximityThreat(out threat);
+            if(readable&&proximityTimer<=0f)proximityTimer=.25f;
+            StepAvoidance(dt,readable,approaching,threat);
+            Vector3 desired = home + OrbitOffset(phase) + avoidanceOffset;
             // Both procedural and authored residents turn before moving. The animation
             // stays on its original visual child; the navigation wrapper owns the heading.
             Vector3 next=SteerForward(transform.position,transform.rotation,desired,dt,cruiseSpeed,out Quaternion heading);
@@ -96,6 +112,65 @@ namespace SwanUnderwater
             }
             motion?.Tick(dt);
         }
+        void ResolvePlayerContext()
+        {
+            if(contextResolved)return;
+            // Naturalist residents can be built before the campaign exists. Resolve
+            // only after the world is ready; never search the scene in the hot loop.
+            contextResolved=true;
+            playerView=world.WildlifeView;playerHands=world.WildlifeHands;
+            campaign=world.GetComponentInChildren<OceanCampaignController>(true);
+        }
+        bool InteractionContextReadable() => campaign!=null&&campaign.GameplayAllowed&&
+            playerView!=null&&playerView.isActiveAndEnabled&&
+            UnderwaterWorld.WildlifeHandResponsesAllowed(playerHands)&&playerHands.IsAnyHandActive();
+        bool TryProximityThreat(out Vector3 threat)
+        {
+            threat=Vector3.zero;
+            // No fresh hand means no interaction, rather than a false threat at the
+            // world origin. A hand also qualifies the borrowed head context here.
+            if(!playerHands.TryGetClosestActiveHand(transform.position,out Vector3 palm,out float palmDistance))return false;
+            if(!Finite(palm)||!Finite(palmDistance))return false;
+            float distance=Mathf.Clamp(clearance+.7f,.8f,2.1f);
+            bool near=palmDistance<distance*distance;
+            if(near)threat=palm;
+            Vector3 head=playerView.transform.position;
+            float headDistance=(head-transform.position).sqrMagnitude;
+            if(Finite(head)&&headDistance<distance*distance&&(!near||headDistance<palmDistance))
+            {near=true;threat=head;}
+            return near;
+        }
+        void StepAvoidance(float elapsed,bool readable,bool approaching,Vector3 threat)
+        {
+            if(!Finite(elapsed)||elapsed<=0f)return;
+            float dt=Mathf.Min(elapsed,.05f);
+            avoidanceCooldown=Mathf.Max(0f,avoidanceCooldown-dt);
+            avoidanceRemaining=Mathf.Max(0f,avoidanceRemaining-dt);
+            if(!readable)
+            {
+                avoidanceRemaining=0f;avoidanceTarget=Vector3.zero;proximityTimer=0f;
+            }
+            else if(approaching&&Finite(threat)&&avoidanceRemaining<=0f&&avoidanceCooldown<=0f)
+            {
+                Vector3 away=Vector3.ProjectOnPlane(transform.position-threat,Vector3.up);
+                if(away.sqrMagnitude<.0001f)away=-Vector3.ProjectOnPlane(transform.forward,Vector3.up);
+                if(away.sqrMagnitude<.0001f)away=Vector3.back;
+                away.Normalize();
+                Vector3 side=Vector3.Cross(Vector3.up,away);
+                if(Vector3.Dot(side,transform.forward)<0f)side=-side;
+                avoidanceTarget=(side*.82f+away*.55f).normalized*Mathf.Clamp(radius*.25f,.25f,.85f);
+                avoidanceRemaining=1.2f;avoidanceCooldown=4.2f;
+            }
+            if(avoidanceRemaining<=0f)avoidanceTarget=Vector3.zero;
+            // Change the existing home-orbit goal, never the animal's position.
+            // Its original nose-first steering and cached body clearance still gate travel.
+            avoidanceOffset=Vector3.MoveTowards(avoidanceOffset,avoidanceTarget,dt*.7f);
+        }
+        void OnDisable()
+        {
+            avoidanceOffset=avoidanceTarget=Vector3.zero;avoidanceRemaining=proximityTimer=0f;
+            avoidanceCooldown=Mathf.Max(avoidanceCooldown,.75f);
+        }
         bool IsClear(Vector3 next)
         {
             float homeLimit=Mathf.Max(.5f,radius)*2.5f;
@@ -106,6 +181,7 @@ namespace SwanUnderwater
         }
         Vector3 OrbitOffset(float atPhase) => new Vector3(Mathf.Sin(atPhase) * radius, Mathf.Sin(atPhase * .7f) * verticalSway, Mathf.Cos(atPhase) * radius * .55f);
         static bool Finite(float value)=>!float.IsNaN(value)&&!float.IsInfinity(value);
+        static bool Finite(Vector3 value)=>Finite(value.x)&&Finite(value.y)&&Finite(value.z);
 
         /// <summary>Authored swimmers turn first, then advance along their own nose. The owner still validates water/reef clearance.</summary>
         public static Vector3 SteerNativeForward(Vector3 position, Quaternion heading, Vector3 goal, float delta, out Quaternion nextHeading)

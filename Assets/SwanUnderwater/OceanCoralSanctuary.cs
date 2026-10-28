@@ -354,11 +354,15 @@ namespace SwanUnderwater
             var stone = new Material(shader) { name = "Sanctuary limestone", enableInstancing = true };
             stone.SetTexture("_BaseMap", Resources.Load<Texture2D>("Textures/Rock/Rock019_Color"));
             stone.SetTexture("_BumpMap", Resources.Load<Texture2D>("Textures/Rock/Rock019_NormalGL"));
-            stone.SetColor("_BaseColor", new Color(.66f, .72f, .70f)); stone.SetFloat("_BumpScale", .95f);
+            stone.SetColor("_BaseColor", new Color(.75f, .76f, .70f)); stone.SetFloat("_BumpScale", .95f);
             stone.SetFloat("_WorldMapping", 1f); stone.SetFloat("_WorldScale", .85f);
+            stone.SetFloat("_Smoothness", .22f);
+            stone.SetColor("_WaterBottomColor", OceanWaterOptics.Bottom(OceanEnvironmentKind.CoralSanctuary));
             resources.Own(stone);
             var living = new Material(shader) { name = "Sanctuary living coral", enableInstancing = true };
             living.SetFloat("_Sway", .025f); living.SetFloat("_WorldMapping", 0f);
+            living.SetFloat("_Smoothness", .30f);
+            living.SetColor("_WaterBottomColor", OceanWaterOptics.Bottom(OceanEnvironmentKind.CoralSanctuary));
             living.SetTexture("_BumpMap",Resources.Load<Texture2D>("Textures/Rock/Rock019_NormalGL"));
             living.SetFloat("_BumpScale", .28f); resources.Own(living);
             // Reuse the admitted scanned coral's 4K maps. White diffuse made the broad
@@ -381,7 +385,7 @@ namespace SwanUnderwater
             var ambientFootprints = new List<Island>(112);
 
             ArchCenter = new Vector3(spawn.x, floor(spawn.x, spawn.z + 17f), spawn.z + 17f);
-            ReefSupportGeometry archSupport = CreateArch(root, ArchCenter, stone, resources, proximity);
+            ReefSupportGeometry archSupport = CreateArch(root, ArchCenter, stone, resources, proximity, surfaceGrowth, floor);
             if (staged) { progress?.Invoke(.27f); yield return null; }
 
             // A narrow foreground frame opens into alternating coves, then the arch and
@@ -923,7 +927,9 @@ namespace SwanUnderwater
                     float a=j/(float)sides*Mathf.PI*2f;
                     Vector3 point=ArchSurfacePoint(center,t,a);
                     float variation=.88f+.12f*Mathf.PerlinNoise(point.x*1.3f+41f,point.y*1.3f+23f);
-                    float crevice=1f-.17f*Mathf.Pow(Mathf.Clamp01(Mathf.Sin(point.y*5.6f+point.x*1.5f)),8f);
+                    // Keep only subtle mineral variation; mesh relief and real sunlight
+                    // shadows provide depth instead of a painted horizontal dark band.
+                    float crevice=1f-.04f*Mathf.Pow(Mathf.Clamp01(Mathf.Sin(point.y*5.6f+point.x*1.5f)),8f);
                     Color tint=new Color(.86f,.94f,.92f,0f)*(variation*crevice);tint.a=0f;
                     g.Add(point,new Vector2(t*11f,j/(float)sides*2.3f),tint);
                     if(i<rings&&j<sides){int q=i*(sides+1)+j;g.Quad(q,q+sides+1,q+sides+2,q+1);}
@@ -931,7 +937,8 @@ namespace SwanUnderwater
             }
             return g.Mesh("Weathered limestone arch "+rings);
         }
-        static ReefSupportGeometry CreateArch(Transform root,Vector3 center,Material stone,OceanSanctuaryResources resources,ReefProximityLod proximity)
+        static ReefSupportGeometry CreateArch(Transform root,Vector3 center,Material stone,OceanSanctuaryResources resources,ReefProximityLod proximity,
+            Material surfaceGrowth,Func<float,float,float> floor)
         {
             var group=new GameObject("Natural reef arch — open swim passage").transform;group.SetParent(root,false);
             var renderers=new Renderer[3];int[] rings={64,36,20};int[] sides={18,12,8};
@@ -953,7 +960,12 @@ namespace SwanUnderwater
                 var bound=new Bounds((a+b)*.5f,Vector3.zero);bound.Encapsulate(a);bound.Encapsulate(b);
                 bound.Expand(new Vector3(ArchRadius(t)*2.25f,ArchRadius(t)*2.25f,4.2f));solids.Add(bound);
             }
-            return ReefSupportGeometry.Read(renderers[0].gameObject,true);
+            ReefSupportGeometry support=ReefSupportGeometry.Read(renderers[0].gameObject,true);
+            // A single small garden follows the real upward-facing outer arch surface.
+            // Reuse top/edge support checks and only its existing LOD0: no new collision,
+            // shadow caster, per-frame placement or change to the three rock LODs.
+            CreateSurfaceGarden(group,renderers[0],support,lod,resources,surfaceGrowth,9000,24,floor);
+            return support;
         }
         static Mesh IslandMesh(Island island,int rings,int sides)
         {
@@ -968,7 +980,9 @@ namespace SwanUnderwater
                     float z=island.center.z+Mathf.Sin(a)*island.depth*r;
                     var p=new Vector3(x,island.Surface(x,z),z);
                     float variation=.86f+.14f*Mathf.PerlinNoise(x*1.7f+island.seed,z*1.7f);
-                    float crevice=1f-.18f*Mathf.Pow(Mathf.Clamp01(Mathf.Sin(p.y*6.7f+x*.7f)),8f);
+                    // Match the arch's restrained tint without changing its real surface,
+                    // near LOD, collision geometry or directional shadow response.
+                    float crevice=1f-.04f*Mathf.Pow(Mathf.Clamp01(Mathf.Sin(p.y*6.7f+x*.7f)),8f);
                     Color tint=new Color(.83f,.91f,.88f,0f)*(variation*crevice);tint.a=0f;
                     g.Add(p,new Vector2(x*.72f,z*.72f),tint);
                     if(i<rings&&j<sides){int q=i*(sides+1)+j;g.Quad(q,q+1,q+sides+2,q+sides+1);}
@@ -1148,6 +1162,12 @@ namespace SwanUnderwater
                 Vector3 normal=cross/magnitude;
                 float facingWeight=Mathf.Lerp(.2f,1f,Mathf.Clamp01(.5f+.5f*Vector3.Dot(normal,towardWater)));
                 float visibleSurfaceWeight=Mathf.Lerp(facingWeight,.75f,Mathf.Pow(Mathf.Clamp01(normal.y),4));
+                // Spend the SAME colony count in irregular stands rather than a uniform
+                // confetti of dots. This field is world anchored and evaluated only while
+                // constructing the reef; tessellation density still cannot bias placement.
+                float stand=Mathf.PerlinNoise(centre.x*.27f+13.7f,centre.z*.27f+47.1f);
+                visibleSurfaceWeight*=Mathf.Lerp(.24f,1.35f,
+                    Mathf.SmoothStep(0f,1f,Mathf.InverseLerp(.28f,.73f,stand)));
                 if(count>=36)
                 {
                     // Reallocate the unchanged world budget towards the broad hero faces.
@@ -1180,7 +1200,10 @@ namespace SwanUnderwater
                 // Broad foliose/encrusting patches cover selected ledges; smaller branches,
                 // fans and sponges break the silhouette rather than making evenly spaced dots.
                 float diameter=style==0?Range(rng,1.2f,2.1f):style==1?Range(rng,.90f,1.6f):Range(rng,.48f,1.05f);
-                Color pigment=surfacePalette[(seed/3+accepted/3)%surfacePalette.Length];
+                // Neighbouring colonies share a restrained local pigment, so swimming
+                // from the warm entrance to the sea-fan ravine reveals readable habitats.
+                // Fine variation remains vertex colour: no extra materials or draw calls.
+                Color pigment=SurfaceHabitatPigment(point,accepted);
                 int firstVertex=growth.positions.Count;
                 if(style==0)AddEncrustingPatch(growth,root,normal,diameter,pigment,rng,support);
                 else if(style==1)AddPlatingColony(growth,root,normal,diameter,pigment,rng);
@@ -1204,6 +1227,25 @@ namespace SwanUnderwater
             lods[0].renderers=near;substrateLod.SetLODs(lods);substrateLod.RecalculateBounds();
             int triangleCount=mesh.triangles.Length/3;
             LivingCoralTriangles+=triangleCount;SurfaceGardenTriangles+=triangleCount;SurfaceGardenRenderers++;
+        }
+
+        static Color SurfaceHabitatPigment(Vector3 point,int ordinal)
+        {
+            Vector2 local=new Vector2(point.x-OceanEnvironmentProfile.SpawnX,point.z-OceanEnvironmentProfile.SpawnZ);
+            int zone=0;float nearest=float.PositiveInfinity;
+            for(int i=0;i<ExplorationZones.Count;i++)
+            {
+                float squared=(local-ExplorationZones[i].offset).sqrMagnitude;
+                if(squared<nearest){zone=i;nearest=squared;}
+            }
+            // Warm rust/ochre, muted rose and olive colonies remain against cool rock.
+            // Select a stable area palette, not one new tint for every tiny colony.
+            int dominant=zone==0?0:zone==1?3:zone==2?2:zone==3?4:zone==4?5:zone==5?1:2;
+            float variation=Mathf.PerlinNoise(point.x*.63f+29f,point.z*.63f+11f);
+            Color colour=Color.Lerp(surfacePalette[dominant],surfacePalette[(dominant+1)%surfacePalette.Length],
+                .10f+.22f*variation);
+            colour*=.89f+.19f*Mathf.PerlinNoise(point.x*.91f+ordinal*.07f,point.z*.91f+71f);
+            colour.a=1f;return colour;
         }
 
         static void SurfaceBasis(Vector3 normal,float yaw,out Vector3 right,out Vector3 along)

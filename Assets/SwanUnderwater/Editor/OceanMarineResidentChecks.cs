@@ -1,6 +1,7 @@
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using UnityEditor;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -37,6 +38,7 @@ namespace SwanUnderwater.EditorTests
             Check(EditorApplication.isPlaying && !EditorApplication.isPaused, "requires an actual running scene");
             Check(world != null && view != null && world.IsReady && world.ActiveEnvironment == OceanEnvironmentKind.CoralSanctuary,
                 "actual sanctuary and view are ready");
+            CheckBorrowedPlayerContext(world);
             GameObject resident = FindResident(world);
             Check(resident != null, "an active appended mackerel group member is present");
             Check(resident.transform.IsChildOf(world.ActiveEnvironmentRoot) && resident.GetComponent<OceanWildlifeResident>() != null,
@@ -202,6 +204,7 @@ namespace SwanUnderwater.EditorTests
         // Actual runtime steering mathematics with synthetic goals/time, independent of asset import and headset input.
         public static void CheckNativeSteering()
         {
+            CheckResidentProximityPolicy();
             float phase = 27 * 1.37f;
             Vector3 goal = new Vector3(Mathf.Sin(phase) * 1.7f, Mathf.Sin(phase * .7f) * .055f, Mathf.Cos(phase) * 1.7f * .55f);
             Vector3 position = Vector3.zero;
@@ -233,6 +236,167 @@ namespace SwanUnderwater.EditorTests
             }
             Vector3 bounded = OceanWildlifeResident.SteerNativeForward(position, heading, Vector3.forward, 99f, out _);
             Check(bounded.magnitude <= .22f * .05f + .000001f, "a long frame cannot teleport the native swimmer");
+        }
+        static void CheckResidentProximityPolicy()
+        {
+            const BindingFlags fields=BindingFlags.Instance|BindingFlags.NonPublic;
+            Type type=typeof(OceanWildlifeResident);
+            var host=new GameObject("Isolated production resident proximity policy");
+            try
+            {
+                Vector3 home=new Vector3(12f,25f,18f);host.transform.SetPositionAndRotation(home,Quaternion.identity);
+                var resident=host.AddComponent<OceanWildlifeResident>();
+                type.GetField("home",fields).SetValue(resident,home);
+                type.GetField("radius",fields).SetValue(resident,3f);
+                type.GetField("clearance",fields).SetValue(resident,.5f);
+                MethodInfo step=type.GetMethod("StepAvoidance",fields),context=type.GetMethod("InteractionContextReadable",fields);
+                Check(step!=null&&context!=null,"production native proximity owner and context gate exist");
+                Func<string,Vector3> vector=name=>(Vector3)type.GetField(name,fields).GetValue(resident);
+                Func<string,float> scalar=name=>(float)type.GetField(name,fields).GetValue(resident);
+                Action<float,bool,bool,Vector3> tick=(dt,readable,near,threat)=>step.Invoke(resident,new object[]{dt,readable,near,threat});
+                Check(!(bool)context.Invoke(resident,null),"missing borrowed player/campaign cannot enable an origin threat");
+                tick(.02f,false,true,Vector3.zero);
+                Check(vector("avoidanceOffset")==Vector3.zero&&scalar("avoidanceRemaining")==0f,"unreadable context cannot react to a default world origin");
+                tick(.02f,true,false,home+Vector3.forward*10f);
+                Check(vector("avoidanceOffset")==Vector3.zero,"a valid distant observation leaves the existing home orbit unchanged");
+                Vector3 threat=home-Vector3.right*.3f;
+                tick(.02f,true,true,threat);
+                Vector3 target=vector("avoidanceTarget");
+                Check(scalar("avoidanceRemaining")>1f&&target.magnitude<=.75001f&&target.y==0f,"near threat starts a bounded horizontal home-orbit offset");
+                Check(vector("avoidanceOffset").magnitude<=.01401f&&host.transform.position==home,"first response eases its goal without relocating the native navigation wrapper");
+                Check(Vector3.Dot(target,home-threat)>0f&&Vector3.Dot(target,host.transform.forward)>0f,"detour combines an outward and nose-compatible lateral direction");
+                for(int frame=0;frame<150;frame++)
+                {
+                    Vector3 previous=vector("avoidanceOffset");
+                    // Holding or sweeping a hand does not retarget the short response.
+                    tick(.02f,true,true,home+Vector3.left*(frame%2==0?.2f:-.2f));
+                    Check(Vector3.Distance(previous,vector("avoidanceOffset"))<=.01401f,"response and return goal changes are bounded each active step");
+                    Check(vector("avoidanceOffset").magnitude<=.75001f,"player interaction cannot turn the fixed home orbit into a chase");
+                    Check(vector("home")==home&&host.transform.position==home,"interaction never mutates home or bypasses the movement owner");
+                    if(frame<58)Check(vector("avoidanceTarget")==target,"held hand cannot rewrite the current avoidance route");
+                }
+                Check(scalar("avoidanceRemaining")==0f&&vector("avoidanceOffset")==Vector3.zero&&scalar("avoidanceCooldown")>1f,
+                    "continued proximity gets a real calm window after the short response");
+                for(int frame=0;frame<70;frame++)tick(.02f,true,false,Vector3.zero);
+                tick(.02f,true,true,threat);
+                Check(scalar("avoidanceRemaining")>1f,"a later fresh approach can start a new bounded response after cooldown");
+                tick(.02f,false,false,Vector3.zero);
+                Check(scalar("avoidanceRemaining")==0f&&vector("avoidanceTarget")==Vector3.zero,
+                    "menu/tracking/context loss cancels the response rather than following a stale palm");
+                for(int frame=0;frame<70;frame++)tick(.02f,false,false,Vector3.zero);
+                Check(vector("avoidanceOffset")==Vector3.zero,"suppressed context smoothly restores the original home-orbit goal");
+                for(int frame=0;frame<160;frame++)tick(.02f,true,false,Vector3.zero);
+                tick(.02f,true,true,new Vector3(float.NaN,0f,0f));
+                Check(vector("avoidanceOffset")==Vector3.zero&&scalar("avoidanceRemaining")==0f,"non-finite threat never poisons a native pose");
+                foreach(float invalid in new[]{0f,-1f,float.NaN,float.PositiveInfinity})
+                {tick(invalid,true,true,threat);Check(vector("avoidanceOffset")==Vector3.zero,"invalid interaction time cannot advance a response");}
+                tick(99f,true,true,threat);
+                Check(vector("avoidanceOffset").magnitude<=.03501f,"a resumed long frame cannot jump the avoidance goal");
+                type.GetMethod("OnDisable",fields).Invoke(resident,null);
+                Check(vector("avoidanceOffset")==Vector3.zero&&scalar("avoidanceRemaining")==0f,
+                    "hidden retained residents clear the old avoidance rather than replay it on re-entry");
+                Check(host.GetComponentsInChildren<Collider>(true).Length==0,"proximity response creates no player collision");
+            }
+            finally{Object.DestroyImmediate(host);}
+        }
+        static void CheckBorrowedPlayerContext(UnderwaterWorld world)
+        {
+            const BindingFlags fields=BindingFlags.Instance|BindingFlags.NonPublic;
+            Type type=typeof(OceanWildlifeResident),handType=typeof(HandSwimController);
+            var fixture=new GameObject("Isolated native resident input-context fixture");
+            var contextRoot=new GameObject("Isolated fixed native player context");
+            try
+            {
+                var resident=fixture.AddComponent<OceanWildlifeResident>();
+                Vector3 origin=world.ActiveSpawn+Vector3.up*20f;fixture.transform.position=origin;
+                resident.Initialize(world,.62f,3f,27,true);
+                type.GetMethod("ResolvePlayerContext",fields).Invoke(resident,null);
+                var campaign=world.GetComponentInChildren<OceanCampaignController>(true);
+                var borrowedView=(Camera)typeof(UnderwaterWorld).GetProperty("WildlifeView",fields).GetValue(world);
+                var borrowedHands=(HandSwimController)typeof(UnderwaterWorld).GetProperty("WildlifeHands",fields).GetValue(world);
+                Check(campaign!=null&&campaign.GameplayAllowed,"native input integration check starts in real unblocked campaign gameplay");
+                Check((bool)type.GetField("contextResolved",fields).GetValue(resident)&&
+                    ReferenceEquals(type.GetField("playerView",fields).GetValue(resident),borrowedView)&&
+                    ReferenceEquals(type.GetField("playerHands",fields).GetValue(resident),borrowedHands)&&
+                    ReferenceEquals(type.GetField("campaign",fields).GetValue(resident),campaign),
+                    "ready-world resolution borrows its own player and already-created campaign exactly once");
+                var cameraObject=new GameObject("Isolated native threat camera");cameraObject.transform.SetParent(contextRoot.transform,false);
+                var camera=cameraObject.AddComponent<Camera>();
+                var handsObject=new GameObject("Isolated fresh native threat hands");handsObject.transform.SetParent(contextRoot.transform,false);
+                var hands=handsObject.AddComponent<HandSwimController>();
+                camera.transform.position=origin+Vector3.forward*10f;
+                handType.GetProperty("LeftHandActive").SetValue(hands,true);
+                handType.GetProperty("RightHandActive").SetValue(hands,false);
+                handType.GetProperty("LeftPalmPos").SetValue(hands,origin-Vector3.right*.3f);
+                handType.GetField("handSampleFrame",fields).SetValue(hands,Time.frameCount);
+                type.GetField("playerView",fields).SetValue(resident,camera);
+                type.GetField("playerHands",fields).SetValue(resident,hands);
+                type.GetField("clearance",fields).SetValue(resident,.5f);
+                MethodInfo gate=type.GetMethod("InteractionContextReadable",fields),sense=type.GetMethod("TryProximityThreat",fields);
+                Func<bool> readable=()=>(bool)gate.Invoke(resident,null);
+                Func<bool> near=()=>{object[] args={Vector3.zero};return (bool)sense.Invoke(resident,args);};
+                Check((bool)typeof(UnderwaterWorld).GetMethod("WildlifeHandResponsesAllowed",BindingFlags.Static|BindingFlags.NonPublic).Invoke(null,new object[]{hands}),
+                    "isolated fresh open context qualifies the shared world response gate");
+                Check(readable()==(campaign!=null&&campaign.GameplayAllowed),"campaign presentation/transition authority remains part of native interaction gating");
+                Check(near(),"one fresh near hand is enough; inactive second hand is never averaged in");
+                handType.GetField("menuLocomotionPaused",fields).SetValue(hands,true);
+                Check(!readable(),"menu hand poses cannot scare native residents");
+                handType.GetField("menuLocomotionPaused",fields).SetValue(hands,false);
+                handType.GetField("interactionSuppressed",fields).SetValue(hands,true);
+                Check(!readable(),"suppressed transition/entry context cannot scare native residents");
+                handType.GetField("interactionSuppressed",fields).SetValue(hands,false);
+                handType.GetField("appFocused",fields).SetValue(hands,false);
+                Check(!readable(),"unfocused input cannot continue a native reaction");
+                handType.GetField("appFocused",fields).SetValue(hands,true);
+                handType.GetField("handSampleFrame",fields).SetValue(hands,Time.frameCount-1);
+                Check(!readable()&&!near(),"stale hand sample is rejected instead of becoming an origin threat");
+                handType.GetField("handSampleFrame",fields).SetValue(hands,Time.frameCount);
+                handType.GetProperty("LeftPalmPos").SetValue(hands,origin+Vector3.right*10f);
+                Check(!near(),"far fresh hand and far borrowed head do not trigger proximity");
+                camera.transform.position=origin+Vector3.forward*.4f;
+                Check(near(),"a fresh qualifying hand permits body-aware head proximity to the same resident");
+                camera.transform.position=origin+Vector3.forward*10f;
+                handType.GetProperty("LeftPalmPos").SetValue(hands,new Vector3(float.NaN,0f,0f));
+                Check(!near(),"non-finite palm input cannot trigger an invalid native goal");
+                handType.GetProperty("LeftPalmPos").SetValue(hands,origin-Vector3.right*.3f);
+                Check(near()&&readable()==(campaign!=null&&campaign.GameplayAllowed),"fresh restored input requalifies through the same campaign gate");
+                MethodInfo tick=type.GetMethod("TickResident",fields);
+                Func<string,Vector3> vector=name=>(Vector3)type.GetField(name,fields).GetValue(resident);
+                Func<string,float> scalar=name=>(float)type.GetField(name,fields).GetValue(resident);
+                Check(borrowedView!=null,"native integration retains its real tracked camera reference");
+                Vector3 playerCameraBefore=camera.transform.position,trackedCameraBefore=borrowedView.transform.position;
+                tick.Invoke(resident,new object[]{.02f});
+                Check(scalar("avoidanceRemaining")>1f,"actual Update owner reads fresh proximity and starts a response inside the ready world");
+                for(int frame=0;frame<125;frame++)
+                {
+                    Vector3 previous=fixture.transform.position;Quaternion heading=fixture.transform.rotation;
+                    tick.Invoke(resident,new object[]{.02f});Vector3 step=fixture.transform.position-previous;
+                    Check(step.magnitude<=.00441f,"actual resident owner retains its unchanged .22m/s cruise limit");
+                    Check(Quaternion.Angle(heading,fixture.transform.rotation)<=.62f,"actual native detour cannot snap its heading");
+                    if(step.sqrMagnitude>.0000000001f)Check(Vector3.Dot(step.normalized,fixture.transform.forward)>.999f,"actual response translation still follows the visible native nose");
+                    Check(vector("home")==origin,"actual resident update cannot follow the player by moving home");
+                }
+                Check(scalar("avoidanceRemaining")==0f&&vector("avoidanceOffset")==Vector3.zero,
+                    "actual owner returns to its original orbit goal after the response and calm period");
+                Check(camera.transform.position==playerCameraBefore&&borrowedView.transform.position==trackedCameraBefore,
+                    "native integration fixture never moves its borrowed player or the tracked camera");
+                type.GetField("avoidanceCooldown",fields).SetValue(resident,0f);
+                handType.GetProperty("LeftPalmPos").SetValue(hands,fixture.transform.position-Vector3.right*.2f);
+                handType.GetField("menuLocomotionPaused",fields).SetValue(hands,true);
+                tick.Invoke(resident,new object[]{.02f});
+                Check(scalar("avoidanceRemaining")==0f,"actual update does not start a response to menu hands");
+                handType.GetField("menuLocomotionPaused",fields).SetValue(hands,false);
+                handType.GetField("handSampleFrame",fields).SetValue(hands,Time.frameCount-1);
+                tick.Invoke(resident,new object[]{.02f});
+                Check(scalar("avoidanceRemaining")==0f,"actual update rejects a stale near palm after menu resume");
+                handType.GetField("handSampleFrame",fields).SetValue(hands,Time.frameCount);
+                tick.Invoke(resident,new object[]{.02f});
+                Check(scalar("avoidanceRemaining")>1f,"actual update accepts a new fresh palm after context recovery");
+                resident.enabled=false;
+                Check(scalar("avoidanceRemaining")==0f&&vector("avoidanceOffset")==Vector3.zero,
+                    "real PlayMode OnDisable clears a retained native response before re-entry");
+            }
+            finally{Object.DestroyImmediate(fixture);Object.DestroyImmediate(contextRoot);}
         }
         static Bounds BoundsOf(Vector3[] vertices)
         {

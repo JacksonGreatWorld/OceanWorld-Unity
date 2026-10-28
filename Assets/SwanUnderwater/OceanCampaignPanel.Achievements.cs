@@ -110,15 +110,14 @@ namespace SwanUnderwater
 
         string AchievementSummary()
         {
-            if (achievementJournal == null) return "成就记录准备中 · 自动解锁并保存在本机";
+            if (achievementJournal == null) return L("成就记录准备中 · 自动解锁并保存在本机");
             int count = achievementJournal.CurrentUnlockedCount;
-            string history = achievementJournal.HistoricalUnlockedCount > 0 ? " · 历史荣誉+" + achievementJournal.HistoricalUnlockedCount : "";
-            string pagination = "第" + (achievementPage + 1) + "/" + AchievementPageCount + "页";
-            if (!achievementJournal.Writable) return (history.Length > 0 ? "记录只读 · 已解锁 " : "记录只读 · 原件保留 · 已解锁 ") + count + "/" + OceanAchievementCatalog.CurrentCount + history + " · " + pagination;
-            if (!string.IsNullOrEmpty(achievementJournal.LastError)) return "保存未完成 · 已解锁 " + count + "/" + OceanAchievementCatalog.CurrentCount + history + " · " + pagination;
-            if (history.Length > 0) return "已解锁 " + count + "/" + OceanAchievementCatalog.CurrentCount + history + " · " + pagination;
-            return "已解锁 " + count + "/" + OceanAchievementCatalog.CurrentCount + history + " · 未读 " + achievementJournal.UnreadCount +
-                " · " + AchievementCategories[achievementFilter] + " " + pagination;
+            string history = achievementJournal.HistoricalUnlockedCount > 0 ? F(" · 历史荣誉+{0}", achievementJournal.HistoricalUnlockedCount) : "";
+            string pagination = F("第{0}/{1}页", achievementPage + 1, AchievementPageCount);
+            if (!achievementJournal.Writable) return F("{0}{1}/{2}{3} · {4}", L(history.Length > 0 ? "记录只读 · 已解锁 " : "记录只读 · 原件保留 · 已解锁 "), count, OceanAchievementCatalog.CurrentCount, history, pagination);
+            if (!string.IsNullOrEmpty(achievementJournal.LastError)) return F("保存未完成 · 已解锁 {0}/{1}{2} · {3}", count, OceanAchievementCatalog.CurrentCount, history, pagination);
+            if (history.Length > 0) return F("已解锁 {0}/{1}{2} · {3}", count, OceanAchievementCatalog.CurrentCount, history, pagination);
+            return F("已解锁 {0}/{1}{2} · 未读 {3} · {4} {5}", count, OceanAchievementCatalog.CurrentCount, history, achievementJournal.UnreadCount, L(AchievementCategories[achievementFilter]), pagination);
         }
 
         void RefreshAchievements()
@@ -152,12 +151,12 @@ namespace SwanUnderwater
                 bool unlocked = achievementJournal != null && achievementJournal.IsUnlocked(definition.Id);
                 bool unread = achievementJournal != null && achievementJournal.IsUnread(definition.Id);
                 long progress = achievementJournal == null ? 0L : achievementJournal.Progress(definition.Id);
-                achievementNames[slot].text = (definition.Historical ? "历史荣誉" : definition.Category) + " · " + definition.Name;
+                achievementNames[slot].text = L(definition.Historical ? "历史荣誉" : definition.Category) + " · " + L(definition.Name);
                 achievementNames[slot].color = unlocked ? Gold : Ink;
-                achievementDescriptions[slot].text = definition.Description;
+                achievementDescriptions[slot].text = L(definition.Description);
                 achievementDescriptions[slot].color = Muted;
-                achievementStates[slot].text = unlocked ? unread ? "已解锁 · 新" : "已解锁" :
-                    OceanCampaignAvailability.IsDeferredAchievement(definition.Id) ? "未开放" : "未解锁";
+                achievementStates[slot].text = L(unlocked ? unread ? "已解锁 · 新" : "已解锁" :
+                    OceanCampaignAvailability.IsDeferredAchievement(definition.Id) ? "未开放" : "未解锁");
                 achievementStates[slot].color = unlocked ? Gold : Muted;
                 achievementNumbers[slot].text = progress + " / " + definition.Target;
                 achievementNumbers[slot].color = unlocked ? Gold : Ink;
@@ -172,8 +171,8 @@ namespace SwanUnderwater
             SetEnabled(achievementNext, achievementPage + 1 < AchievementPageCount);
             int unseen = achievementJournal?.UnreadCount ?? 0;
             bool writable = achievementJournal != null && achievementJournal.Writable;
-            achievementMarkSeen.label.text = !writable ? achievementJournal == null ? "记录准备中" : "记录只读" :
-                unseen > 0 ? "全部已读（" + unseen + "）" : "暂无未读";
+            achievementMarkSeen.label.text = !writable ? L(achievementJournal == null ? "记录准备中" : "记录只读") :
+                unseen > 0 ? F("全部已读（{0}）", unseen) : L("暂无未读");
             SetEnabled(achievementMarkSeen, writable && unseen > 0);
         }
 

@@ -57,7 +57,11 @@ namespace SwanUnderwater.EditorTests
                 Check(OceanCampaignGuide.Describe(state).Action.Contains("寻找剩余金币"),"two-star exploration directed to remaining coin");
                 for(int slot=0;slot<state.CoinTargetCount;slot++)Check(state.CollectCoin(OceanLevelCatalog.CoinId(slot)),"every actual coin accepted");
                 Capture("three-stars-"+level,state);
-                Check(OceanCampaignGuide.Describe(state).Action.Contains(level==OceanLevelCatalog.Count?"百关完成":"进入下一关"),"only final level announces full campaign completion");
+                string completion=OceanCampaignGuide.Describe(state).Action;
+                string expectedCompletion=OceanCampaignAvailability.IsFinalLevel(level)?"后续敬请期待":
+                    level==OceanLevelCatalog.Count?"百关完成":"进入下一关";
+                Check(completion.Contains(expectedCompletion),"completion guide respects the published chapter boundary "+level);
+                if(OceanCampaignAvailability.IsFinalLevel(level))Check(!completion.Contains("下一关"),"published final level cannot invite a locked next level");
                 state.StartLevel(level);
                 if(!state.UnlimitedTime){state.Tick(state.TimeLimitSeconds-30,true);Capture("last-30-seconds-"+level,state);Check(OceanCampaignGuide.Describe(state).Urgent,"last minute stays highlighted");state.Tick(30,true);Capture("expired-"+level,state);Check(OceanCampaignGuide.Describe(state).Action.Contains("时间已到"),"expired guide cannot direct inaccessible collection");}
             }

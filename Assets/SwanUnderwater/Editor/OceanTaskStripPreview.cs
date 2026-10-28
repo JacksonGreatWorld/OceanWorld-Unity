@@ -22,11 +22,19 @@ namespace SwanUnderwater.Editor
         static OceanTaskStripPreview() { if (SessionState.GetBool(Key + "active", false)) Attach(); }
         public static string Output => SessionState.GetString(Key + "output", "");
         public static bool PerformanceOnly => SessionState.GetBool(Key + "performanceOnly", false);
+        public static bool TutorialOnly => SessionState.GetBool(Key + "tutorialOnly", false);
+        public static bool LanguageOnly => SessionState.GetBool(Key + "languageOnly", false);
+        public static bool LanguageWorldOnly => SessionState.GetBool(Key + "languageWorldOnly", false);
+        public static bool LanguageMenuOnly => SessionState.GetBool(Key + "languageMenuOnly", false);
+        public static bool LanguageRefreshOnly => SessionState.GetBool(Key + "languageRefreshOnly", false);
+        public static bool LanguageStripOnly => SessionState.GetBool(Key + "languageStripOnly", false);
         // Separate graphical Editor, without -quit or -nographics.
         public static void Capture() => Begin(false);
         // Narrow regression: does not execute the older campaign/guide state fixture.
         public static void CapturePerformance() => Begin(true);
-        static void Begin(bool performanceOnly)
+        public static void CaptureTutorialClose() => Begin(false,true);
+        public static void CaptureLanguage() => Begin(false,false,true);
+        static void Begin(bool performanceOnly,bool tutorialOnly=false,bool languageOnly=false)
         {
             if (!Application.isBatchMode || EditorApplication.isPlayingOrWillChangePlaymode) throw new InvalidOperationException("Start a fresh batch Editor in Edit Mode.");
             string output = performanceOnly ? "Validation/performance-menu/unity-preview" : "Validation/iteration-25/task-strip/unity-preview";
@@ -41,6 +49,16 @@ namespace SwanUnderwater.Editor
             SessionState.SetBool(Key + "hadPreference", PerformanceHud.HasVisibilityPreferenceForValidation);
             SessionState.SetBool(Key + "preference", PerformanceHud.PreferenceVisible);
             SessionState.SetBool(Key + "performanceOnly", performanceOnly);
+            SessionState.SetBool(Key + "tutorialOnly", tutorialOnly);
+            SessionState.SetBool(Key + "languageOnly", languageOnly);
+            SessionState.SetBool(Key+"languageWorldOnly",Array.IndexOf(args,"-codexLanguageWorldOnly")>=0);
+            SessionState.SetBool(Key+"languageMenuOnly",Array.IndexOf(args,"-codexLanguageMenuOnly")>=0);
+            SessionState.SetBool(Key+"languageRefreshOnly",Array.IndexOf(args,"-codexLanguageRefreshOnly")>=0);
+            SessionState.SetBool(Key+"languageStripOnly",Array.IndexOf(args,"-codexLanguageStripOnly")>=0);
+            if(languageOnly)
+            {SessionState.SetBool(Key+"languageHad",PlayerPrefs.HasKey(OceanLanguage.PreferenceKey));SessionState.SetInt(Key+"languageValue",PlayerPrefs.GetInt(OceanLanguage.PreferenceKey,0));}
+            if(tutorialOnly||languageOnly)
+            {SessionState.SetBool(Key+"tutorialSeenHad",PlayerPrefs.HasKey("ocean_interactive_tutorial_seen_v1"));SessionState.SetInt(Key+"tutorialSeen",PlayerPrefs.GetInt("ocean_interactive_tutorial_seen_v1",0));}
             SessionState.SetString(Key + "output", output); SessionState.SetString(Key + "error", "");
             SessionState.SetString(Key + "start", DateTime.UtcNow.Ticks.ToString(CultureInfo.InvariantCulture)); SessionState.SetBool(Key + "active", true);
             Attach(); EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single); EditorApplication.isPlaying = true;
@@ -57,7 +75,14 @@ namespace SwanUnderwater.Editor
             if (!EditorApplication.isPlaying || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
             if (runner == null) runner = new GameObject("Compact task strip evidence").AddComponent<OceanTaskStripRunner>();
         }
-        public static void RestorePreference() => PerformanceHud.RestoreVisibilityPreferenceForValidation(SessionState.GetBool(Key + "hadPreference", false), SessionState.GetBool(Key + "preference", true));
+        public static void RestorePreference()
+        {
+            PerformanceHud.RestoreVisibilityPreferenceForValidation(SessionState.GetBool(Key+"hadPreference",false),SessionState.GetBool(Key+"preference",true));
+            if(TutorialOnly||LanguageOnly)
+            {if(SessionState.GetBool(Key+"tutorialSeenHad",false))PlayerPrefs.SetInt("ocean_interactive_tutorial_seen_v1",SessionState.GetInt(Key+"tutorialSeen",0));else PlayerPrefs.DeleteKey("ocean_interactive_tutorial_seen_v1");PlayerPrefs.Save();}
+            if(LanguageOnly)
+            {if(SessionState.GetBool(Key+"languageHad",false))PlayerPrefs.SetInt(OceanLanguage.PreferenceKey,SessionState.GetInt(Key+"languageValue",0));else PlayerPrefs.DeleteKey(OceanLanguage.PreferenceKey);PlayerPrefs.Save();}
+        }
         public static void Finish(bool passed, string detail)
         {
             if (!SessionState.GetBool(Key + "active", false)) return;
@@ -90,12 +115,12 @@ namespace SwanUnderwater.Editor
             try
             {
                 if(OceanTaskStripPreview.PerformanceOnly)report.evidence="Actual production CampaignPanel and PerformanceHud in an isolated single-camera Editor scene. Three text-size presets, main/nested buttons, stored preference reads and HUD visibility use production UI callbacks and qualified synthetic ray pinches. In-memory level state only; no player JSON, world or network initialization. No headset tracking, restart, stereo readability, device performance or physical comfort claim. Original performance preference presence/value restored on normal/error exit.";
-                if(!OceanTaskStripPreview.PerformanceOnly){SwanUnderwater.EditorTests.OceanCampaignGuideTests.RunAll();report.stateCases.AddRange(SwanUnderwater.EditorTests.OceanCampaignGuideTests.Cases);}
+                if(!OceanTaskStripPreview.PerformanceOnly&&!OceanTaskStripPreview.TutorialOnly&&!OceanTaskStripPreview.LanguageOnly){SwanUnderwater.EditorTests.OceanCampaignGuideTests.RunAll();report.stateCases.AddRange(SwanUnderwater.EditorTests.OceanCampaignGuideTests.Cases);}
                 view=new GameObject("Task strip preview camera").AddComponent<Camera>();view.transform.position=new Vector3(0,1.6f,0);view.fieldOfView=55;view.aspect=1.6f;view.nearClipPlane=.02f;view.farClipPlane=10;
                 view.clearFlags=CameraClearFlags.SolidColor;view.backgroundColor=new Color(.012f,.044f,.067f);view.GetUniversalAdditionalCameraData().allowXRRendering=false;
                 target=new RenderTexture(1536,960,24,RenderTextureFormat.ARGB32);target.Create();pixels=new Texture2D(1536,960,TextureFormat.RGB24,false);view.targetTexture=target;
                 hands=new GameObject("Disabled physical hand tracker").AddComponent<HandSwimController>();hands.enabled=false;
-                state=new OceanCampaignState();state.StartLevel(OceanTaskStripPreview.PerformanceOnly?1:5);
+                state=new OceanCampaignState();state.StartLevel(OceanTaskStripPreview.PerformanceOnly||OceanTaskStripPreview.TutorialOnly||OceanTaskStripPreview.LanguageOnly?1:5);
                 panel=new GameObject("Production compact campaign panel").AddComponent<OceanCampaignPanel>();panel.Initialize(view,hands,state,Handle);panel.SetAvailable(true);
                 // RuntimeDiagnostics.Install automatically supplies a HUD after this empty scene loads.
                 // Borrow that process-local instance and never create another diagnostics host.
@@ -105,7 +130,45 @@ namespace SwanUnderwater.Editor
                 Require(performance==PerformanceHud.Instance&&UnityEngine.Object.FindObjectsByType<PerformanceHud>(FindObjectsSortMode.None).Length==1,"preview reuses the sole runtime HUD without replacing its diagnostics host");
                 Require(UnityEngine.Object.FindObjectsByType<RuntimeDiagnostics>(FindObjectsSortMode.None).Length==diagnosticsCount,"preview creates no extra diagnostic singleton");
                 cameraOverrideApplied=true;performance.SetEditorPreviewCamera(view);
-                if(OceanTaskStripPreview.PerformanceOnly)
+                if(OceanTaskStripPreview.LanguageOnly)
+                {
+                    report.evidence="Actual bilingual production UI in an isolated PlayMode fixture. Three text presets and synthetic release-hover-pinch language selection. Editor preferences restored; no device locale, native hand, stereo or headset performance claim.";
+                    if(OceanTaskStripPreview.LanguageRefreshOnly)
+                    {
+                        report.evidence="Actual expedition captions, node labels and the existing performance overlay with synthetic isolated mechanic states and locale changes. Font/geometry checks are Editor evidence, not headset tracking or performance acceptance.";
+                        yield return SwanUnderwater.EditorTests.OceanLanguageRuntimeUiChecks.RunInPlayMode(view,Save);
+                        report.assertions+=SwanUnderwater.EditorTests.OceanLanguageRuntimeUiChecks.Assertions;
+                    }
+                    else if(OceanTaskStripPreview.LanguageStripOnly)
+                    {
+                        report.evidence="Actual task-strip UI for all twenty levels, three text sizes and synthetic hint/locale changes. No device input, player-file writes or headset acceptance.";
+                        yield return SwanUnderwater.EditorTests.OceanTaskStripLanguageChecks.RunInPlayMode(panel,view,state,Save);
+                        report.assertions+=SwanUnderwater.EditorTests.OceanTaskStripLanguageChecks.Assertions;
+                    }
+                    else
+                    {
+                    if(!OceanTaskStripPreview.LanguageWorldOnly)
+                    {
+                        yield return SwanUnderwater.EditorTests.OceanLanguageChecks.RunInPlayMode(panel,view,state,Save);
+                        report.assertions+=SwanUnderwater.EditorTests.OceanLanguageChecks.Assertions;
+                    }
+                    else report.evidence="Actual production toast queues and cinematic title typography in an isolated PlayMode scene. Locale changes and values are synthetic; no device, physical input, audible-sound or headset performance claim. Editor preferences restored.";
+                    if(!OceanTaskStripPreview.LanguageMenuOnly)
+                    {
+                        PerformanceHud.SetPreferenceVisible(true);
+                        yield return null;
+                        yield return SwanUnderwater.EditorTests.OceanLanguageWorldChecks.RunInPlayMode(view,Save);
+                        report.assertions+=SwanUnderwater.EditorTests.OceanLanguageWorldChecks.Assertions;
+                    }
+                    }
+                }
+                else if(OceanTaskStripPreview.TutorialOnly)
+                {
+                    report.evidence="Actual production Panel/Tutorial in PlayMode. Four lesson steps and three text presets; qualified synthetic fresh release-hover-pinch input. Diagram statuses and lesson setup are synthetic. No hardware controller, native hand, headset stereo or performance claim. Seen and HUD preferences restored.";
+                    yield return SwanUnderwater.EditorTests.OceanTutorialExitChecks.RunInPlayMode(panel,view,state,Save);
+                    report.assertions+=SwanUnderwater.EditorTests.OceanTutorialExitChecks.Assertions;
+                }
+                else if(OceanTaskStripPreview.PerformanceOnly)
                 {
                     yield return CheckPerformanceMenu();
                 }
@@ -124,12 +187,38 @@ namespace SwanUnderwater.Editor
                 Require(!panel.WorldInputBlocked,"collapse releases transition input gate");
                 Require(panel.GuideRectForValidation.rect.height==56&&panel.GuideRectForValidation.localScale.x==.00085f,"bar shrinks from 70 to 56 without shrinking physical text scale");
                 Require(panel.GuideRectForValidation.parent==view.transform&&Mathf.Abs(panel.GuideRectForValidation.localPosition.y-.210f)<.0001f,"compact strip remains head-local and slightly lower");
-                for(int level=1;level<=20;level++)
+                for(int preset=0;preset<3;preset++)
                 {
-                    state.StartLevel(level);panel.Refresh();panel.SetGuideHintForValidation(0);yield return null;CheckGuide();
-                    if(level==1||level==3||level==8||level==14||level==17||level==20)Save("guide-level-"+level);
-                    panel.SetGuideHintForValidation(1);CheckGuide(1);
+                    panel.SetTextScaleForValidation(preset);
+                    for(int level=1;level<=20;level++)
+                    {
+                        state.StartLevel(level);panel.Refresh();
+                        for(int hint=0;hint<3;hint++)
+                        {
+                            panel.SetGuideHintForValidation(hint);yield return null;CheckGuide(hint);
+                            if(preset==0&&hint==0&&(level==1||level==3||level==8||level==14||level==17||level==20))Save("guide-level-"+level);
+                            if(hint==2&&state.Definition.MechanicOptional)Save("guide-optional-"+level+"-text-"+preset);
+                        }
+                        if(!state.UnlimitedTime)
+                        {
+                            state.Tick(Math.Max(0,state.Current.remainingSeconds-45f),true);
+                            panel.Refresh();panel.SetGuideHintForValidation(2);yield return null;CheckGuide(2);
+                        }
+                        CompleteMainForGuide();panel.Refresh();
+                        for(int hint=0;hint<3;hint++)
+                        { panel.SetGuideHintForValidation(hint);yield return null;CheckGuide(hint); }
+                        if(level==OceanCampaignAvailability.AvailableLevelCount)
+                        {
+                            for(int coin=0;coin<state.CoinTargetCount;coin++)
+                                Require(state.CollectCoin(OceanLevelCatalog.CoinId(coin)),"isolated final chapter hidden coin transaction");
+                            panel.Refresh();panel.SetGuideHintForValidation(0);yield return null;CheckGuide(0);
+                            Require(panel.GuideActionForValidation.Contains("敬请期待")&&!panel.GuideActionForValidation.Contains("下一关"),
+                                "published final chapter cannot invite entry into a locked level");
+                            Save("guide-20-chapter-complete-text-"+preset);
+                        }
+                    }
                 }
+                panel.SetTextScaleForValidation(0);
                 state.StartLevel(5);panel.Refresh();Save("boss-find-speargun");
                 Require(state.AcquireTool(),"actual tool acquire");for(int i=0;i<4;i++){Require(state.TryFireSpear(),"actual shot");if(i<3)Require(state.HitShark(),"actual hit");}
                 panel.Refresh();CheckGuide();Require(panel.GuideActionForValidation.Contains("3/10")&&panel.GuideDetailsForValidation.Contains("剩余子弹 16/20"),"visible strings label three hits versus sixteen rounds");Save("boss-3-hits-16-rounds");
@@ -141,12 +230,18 @@ namespace SwanUnderwater.Editor
                 panel.SetGuideHintForValidation(1);CheckGuide(1);Save("mixed-after-boss-fish-hint");
                 panel.ClearValidationRays();yield return new WaitForSecondsRealtime(.5f);yield return Press("menu");yield return new WaitForSecondsRealtime(.5f);
                 Require(panel.IsOpen,"thinner strip still opens via real ray/pinch gate");
+                yield return SwanUnderwater.EditorTests.OceanMenuClickFeedbackTests.CheckRuntimeLifecycle();
                 }
             }
             finally { RestorePreviewContext(); }
-            OceanTaskStripPreview.Finish(true,OceanTaskStripPreview.PerformanceOnly?
+            OceanTaskStripPreview.Finish(true,OceanTaskStripPreview.LanguageOnly?(OceanTaskStripPreview.LanguageRefreshOnly?
+                "Expedition live language refresh and actual performance typography passed; isolated Editor states, no wearer acceptance.":OceanTaskStripPreview.LanguageStripOnly?
+                "All twenty task-strip locale/hint states passed at three text sizes; isolated Editor data, no wearer acceptance.":OceanTaskStripPreview.LanguageWorldOnly?
+                "Localized toast snapshots/queue timing, cinematic typography and the existing performance overlay passed. Isolated Editor presentation data only; no tracked-input or device claim.":
+                "Bilingual settings, live UI refresh and qualified synthetic ray selections passed; player data untouched, Editor preferences restored."):OceanTaskStripPreview.TutorialOnly?
+                "Tutorial quick/header close across four steps and three text presets, actual press gates, lifecycle and unchanged campaign records passed. Editor synthetic input, no wearer acceptance.":OceanTaskStripPreview.PerformanceOnly?
                 "Direct main-menu performance control, nested synchronization, three text presets, actual HUD and qualified synthetic ray pinches passed; preference restored. No device or stereo claim.":
-                "Compact action/count/time copy, all twenty initial guides, actual boss/ordered transitions and actual performance UI toggle passed with synthetic hand rays.");
+                "All twenty guide states and optional hints at three text presets, actual boss/ordered transitions, performance controls and live press lifecycle passed with synthetic hand rays. Editor evidence, not headset acceptance.");
         }
         IEnumerator CheckPerformanceMenu()
         {
@@ -185,6 +280,20 @@ namespace SwanUnderwater.Editor
             if(action=="toggle_performance"){report.toggleActions++;PerformanceHud.SetPreferenceVisible(!PerformanceHud.PreferenceVisible);panel.Refresh();}
             else if(action=="menu")panel.OpenMenu();else if(action=="resume")panel.CloseMenu();else throw new InvalidOperationException("Unexpected task-strip callback "+action);
         }
+        void CompleteMainForGuide()
+        {
+            for(int species=0;species<10;species++)
+                if((state.ShellTargetMask&(1<<species))!=0)Require(state.CollectShell(50000+species,species),"isolated UI main shell transaction");
+            for(int species=0;species<10;species++)
+                if((state.FishTargetMask&(1<<species))!=0)Require(state.CollectFish(species),"isolated UI main fish transaction");
+            if(state.RequiresShark)
+            {
+                Require(state.AcquireTool(),"isolated UI tool transaction");
+                for(int i=0;i<state.SharkHitTarget;i++)Require(state.TryFireSpear()&&state.HitShark(),"isolated UI shark transaction");
+                Require(state.CatchShark(),"isolated UI shark capture transaction");
+            }
+            Require(state.GoalComplete,"isolated UI main goal completes without optional activity");
+        }
         void CheckGuide(int hint=0)
         {
             var expected=OceanCampaignGuide.Describe(state,hint);Require(panel.GuideActionForValidation==expected.Action&&panel.GuideDetailsForValidation==expected.Details,"actual panel matches current state/action and labeled counts "+state.Current.level);
@@ -220,18 +329,45 @@ namespace SwanUnderwater.Editor
         IEnumerator Press(string id)
         {
             RectTransform rect=null;foreach(var b in panel.GetButtonsForValidation())if(b.id==id)rect=b.rect;Require(rect!=null,"ray target exists "+id);
+            int acceptedBefore=panel.ActivationCountForValidation;
+            bool phaseCaptured=false;
             foreach(float strength in new[]{0f,1f,0f})
             {
                 double start=Time.unscaledTimeAsDouble;float seconds=strength==0?.65f:.12f;
-                do{panel.DriveMenuRayForValidation(true,new Ray(view.transform.position,(rect.position-view.transform.position).normalized),strength,true);panel.DriveMenuRayForValidation(false,default,0,false);yield return null;}while(Time.unscaledTimeAsDouble-start<seconds);
+                do
+                {
+                    panel.DriveMenuRayForValidation(true,new Ray(view.transform.position,(rect.position-view.transform.position).normalized),strength,true);
+                    panel.DriveMenuRayForValidation(false,default,0,false);
+                    if(!phaseCaptured&&panel.ActivationCountForValidation>acceptedBefore)
+                    {
+                        var pulse=panel.ClickFeedbackForValidation;
+                        Require(pulse!=null&&pulse.IsPlaying,"qualified ray press produces an acknowledgement "+id);
+                        // Phase images follow an actual accepted input. Their nominal
+                        // animation ages are not measured GPU/frame-time evidence.
+                        foreach(float age in new[]{.01f,.07f,.18f})
+                        {
+                            pulse.SetPhaseForValidation(age/OceanMenuClickFeedback.Duration);
+                            Save("press-"+id+"-"+panel.ActivationCountForValidation+"-phase-"+(int)(age*1000)+"ms");
+                        }
+                        phaseCaptured=true;
+                    }
+                    yield return null;
+                }while(Time.unscaledTimeAsDouble-start<seconds);
             }
+            Require(phaseCaptured&&panel.ActivationCountForValidation==acceptedBefore+1,"held gesture acknowledges exactly one accepted press "+id);
             panel.ClearValidationRays();
         }
         void Require(bool condition,string message){report.assertions++;report.checks.Add(message+": "+condition);if(!condition)throw new InvalidOperationException("Task strip preview: "+message);}
         void Save(string name)
         {
-            Canvas.ForceUpdateCanvases();if(panel.GuideRectForValidation.gameObject.activeInHierarchy)CheckGuide(name=="mixed-after-boss-fish-hint"?1:0);
-            foreach(Text t in panel.GetComponentsInChildren<Text>())if(t.gameObject.activeInHierarchy)foreach(char c in t.text)if(!char.IsWhiteSpace(c))Require(t.font.HasCharacter(c),"menu glyph "+c);
+            Canvas.ForceUpdateCanvases();
+            // These probes collect all layout/copy problems before failing. Their
+            // evidence capture must not abort at an older, narrower assertion.
+            if(!OceanTaskStripPreview.LanguageRefreshOnly&&!OceanTaskStripPreview.LanguageStripOnly)
+            {
+                if(!OceanTaskStripPreview.TutorialOnly&&!panel.TutorialActive&&panel.GuideRectForValidation.gameObject.activeInHierarchy)CheckGuide(panel.GuideHintForValidation);
+                foreach(Text t in panel.GetComponentsInChildren<Text>())if(t.gameObject.activeInHierarchy)foreach(char c in t.text)if(!char.IsWhiteSpace(c))Require(t.font.HasCharacter(c),"menu glyph "+c);
+            }
             RenderPipeline.SubmitRenderRequest(view,new UniversalRenderPipeline.SingleCameraRequest{destination=target});var old=RenderTexture.active;RenderTexture.active=target;pixels.ReadPixels(new Rect(0,0,target.width,target.height),0,0);pixels.Apply();RenderTexture.active=old;
             string file=name+".png";File.WriteAllBytes(Path.Combine(OceanTaskStripPreview.Output,file),pixels.EncodeToPNG());report.screenshots.Add(file);
         }

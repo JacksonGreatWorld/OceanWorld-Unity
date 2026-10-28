@@ -1,0 +1,176 @@
+using System.Collections.Generic;
+
+namespace SwanUnderwater
+{
+    public static partial class OceanLanguage
+    {
+        // Exact source keys and complete format templates. Never substitute fragments
+        // inside a player's name, saved record or a sentence from another context.
+        static partial void AddWorldStrings(Dictionary<string, string> entries)
+        {
+            entries["《欢迎来到梦幻海底世界》"] = "Welcome to OceanWorld";
+            entries["《第一关，贝壳寻宝》"] = "Level 1 - Shell Treasure Hunt";
+            entries["双手划动可以前进"] = "Paddle both hands to swim forward";
+            entries["加载暂未完成  请重新进入"] = "Loading could not finish. Please reopen the game.";
+            entries["跳过入场"] = "Skip intro";
+            entries["已请求跳过"] = "Skipping intro";
+            entries["指向后松手，再捏合 · 也可用控制器"] = "Point, release, then pinch · Controllers also work";
+            entries["入场重看 · 进度保留 · 结束回到菜单"] = "Intro replay · Progress kept · Returns to the menu";
+            entries["加载完成后安全进入 · 正在准备"] = "Preparing the ocean · Entering when loading is ready";
+            entries["练习扇贝已拾取 · 请打开金色菜单"] = "Practice shell collected · Open the gold menu";
+            entries["把手放到头显可见范围 · 可点关闭教学退出"] = "Keep your hands in view · Select Close tutorial to exit";
+            entries["再靠近一点 · 练习扇贝不计入收藏"] = "Move a little closer · This practice shell is not a collectible";
+            entries["先张开手，再握拳 · 练习扇贝不计入收藏"] = "Open your hand, then make a fist · Practice only";
+            entries["现在握拳，拾取练习扇贝"] = "Make a fist now to pick up the practice shell";
+            entries["{0}：{1}"] = "{0}: {1}";
+            entries["左手"] = "Left hand";
+            entries["右手"] = "Right hand";
+            entries["已追踪 · 张开"] = "Tracked · Open";
+            entries["已追踪 · 请张手"] = "Tracked · Open your hand";
+            entries["未追踪 · 请伸手"] = "Not tracked · Bring your hand into view";
+            entries["慢动作示意 · 图中的手不是实时追踪"] = "Slow-motion example · These hands are an animation";
+            entries["左右手追踪状态 · 至少一只手张开"] = "Hand tracking status · Keep at least one hand open";
+            entries["停手，等待减速；示意动画不会完成教学"] = "Stop and let yourself slow down · The example does not complete the lesson";
+            entries["轻松把手送回前方，再向身后划水"] = "Relax and return your hands forward, then paddle back";
+            entries["双手缓慢向身后划水，不必快速挥动"] = "Paddle both hands slowly backward · No fast swings needed";
+            entries["靠近练习扇贝，先张开手，再握拳"] = "Move near the practice shell · Open your hand, then make a fist";
+            entries["打开金色菜单，查看目标，再收起"] = "Open the gold menu, view your goals, then close it";
+            entries["请把手放到头显能看见的范围内"] = "Keep your hands where the headset can see them";
+
+            entries["恭喜你，集齐5种贝壳，第一关通关！"] = "All 5 shells collected · Level 1 complete!";
+            entries["恭喜你，达成隐藏任务！"] = "Hidden treasure found!";
+            entries["靠近贝壳，握拳收集"] = "Move near a shell and make a fist to collect it";
+            entries["宝藏大奖"] = "TREASURE BONUS";
+            entries["已收集 {0}/5"] = "Collected {0}/5";
+            entries["该贝壳你已经拥有（{0}/5）"] = "You already have this shell ({0}/5)";
+            entries["你收集到1种贝壳：{0}（{1}/5）"] = "New shell: {0} ({1}/5)";
+            entries["金币 {0}/{1} · 继续探索，寻找剩余金币"] = "Coins {0}/{1} · Keep exploring for the rest";
+            entries["请先寻找：{0}"] = "Find this one first: {0}";
+            entries["该贝壳你已经拥有：{0}（{1}/{2}）"] = "You already have: {0} ({1}/{2})";
+            entries["你收集到1种贝壳：{0}（{1}/{2}）"] = "Shell collected: {0} ({1}/{2})";
+            entries["收集到：{0}"] = "Collected: {0}";
+            entries["已拥有渔枪！单手握拳，翘拇指、伸食指显枪；弯曲食指射击。本关共{0}发。"] = "Speargun ready! Raise your thumb and point your index finger. Bend your index finger to fire. {0} shots this level.";
+            entries["{0} 已眩晕，靠近握拳抓取！"] = "{0} is stunned · Move close and make a fist to catch it!";
+            entries["{0} 命中 {1}/{2}"] = "{0} · Hits {1}/{2}";
+            entries["你成功抓到了{0}！"] = "You caught {0}!";
+            entries["请先抓到：{0}"] = "Catch this one first: {0}";
+            entries["该鱼你已经拥有：{0}"] = "You already have this fish: {0}";
+            entries["缺少工具，先找到海底的渔枪。"] = "Find the speargun on the seabed first.";
+            entries["{0} 还需命中 {1} 次，才能抓取。"] = "{0} needs {1} more hits before you can catch it.";
+            entries["最后一发已射出，等待命中结果。"] = "Last shot fired · Wait for the result.";
+            entries["鱼叉已系回身前 · 靠近握抓，或指向后松手再捏合回收。回收不会补弹。"] = "The spear is tethered in front of you. Grab it nearby, or point, release and pinch to recover it. Recovery does not refill ammo.";
+            entries["鱼叉已回收 · 余弹{0}/{1}。重新伸直食指准备下一发。"] = "Spear recovered · Ammo {0}/{1}. Straighten your index finger for the next shot.";
+            entries["未命中 · 等待鱼叉回到身前并回收后再试。"] = "Missed · Recover the tethered spear before trying again.";
+            entries["未命中，瞄准后再次扣动扳机。"] = "Missed · Aim and pull the trigger again.";
+            entries["{0}发已用完，挑战失败。可以重新开始本关。"] = "All {0} shots used · Challenge failed. You can retry this level.";
+            entries["前20关冒险完成，更多海域敬请期待！"] = "All 20 levels complete · More ocean adventures are coming!";
+            entries["本关目标达成！"] = "Level goals complete!";
+            entries["请重新选择关卡，完成场景恢复后再继续。"] = "Select a level again to restore the scene before continuing.";
+            entries["本地收集记录暂未保存，请稍后重试。"] = "Your collection could not be saved. Please try again shortly.";
+            entries["正在前往{0}…"] = "Travelling to {0}…";
+            entries["阳光海湾"] = "Sunlit Bay";
+            entries["场景暂时无法恢复，请重新选择关卡重试。原进度已保留。"] = "The scene could not be restored. Select a level to retry. Your progress is kept.";
+            entries["场景暂未准备好，已返回原关卡。可以重新选择重试。"] = "The scene is not ready. You are back in the previous level. Select it again to retry.";
+            entries["进度暂未保存，请保留游戏再试。"] = "Progress could not be saved. Keep the game open and try again.";
+            entries["存档暂时无法读取。菜单顶部可重新读取，原存档保留。"] = "Your save could not be read. Retry from the top of the menu. The original files are kept.";
+            entries["成就达成 · {0}"] = "Achievement unlocked · {0}";
+            entries["新观察记录 · {0}（{1}/{2}）\n{3}"] = "New observation · {0} ({1}/{2})\n{3}";
+            entries["生物观察 · {0}（{1}/{2}）\n{3}"] = "Marine life · {0} ({1}/{2})\n{3}";
+
+            entries["晨光礁拱"] = "Sunrise Reef Arch";
+            entries["从拱洞望向深蓝，留意穿行的鱼群"] = "Look through the arch into the blue and watch the passing fish.";
+            entries["层礁回廊"] = "Layered Reef Passage";
+            entries["沿层叠礁壁慢游，观察礁缝里的小鱼"] = "Swim slowly along the reef walls and look for fish in the cracks.";
+            entries["珊瑚庭院"] = "Coral Garden";
+            entries["停下来看看，珊瑚之间也有生命在活动"] = "Pause and look closer. Life is moving between the corals.";
+            entries["摇曳草海"] = "Swaying Seagrass Meadow";
+            entries["顺着海草的摆动，寻找沙地与草丛中的贝壳"] = "Follow the swaying seagrass and look for shells in the sand.";
+            entries["静水寻贝湾"] = "Quiet Shell Cove";
+            entries["低头探索沙地，靠近的贝壳会微微发光"] = "Explore the sand below. Nearby shells give a gentle glow.";
+            entries["海扇峡谷"] = "Sea Fan Canyon";
+            entries["绕过礁角，观察海扇与鱼群的缓慢摆动"] = "Round the reef and watch the sea fans and fish drift slowly.";
+            entries["蓝渊裂谷"] = "Blue Rift";
+            entries["抬头望向光，感受远处海域的尺度"] = "Look up toward the light and take in the distant ocean.";
+            entries["七处秘境已探索 · 珊瑚海巡游完成\n继续寻找本关的鱼、贝壳和金币"] = "All 7 sites explored · Coral tour complete\nKeep looking for this level's fish, shells and coins";
+            entries["发现 · {0}（{1}/{2}）\n{3}"] = "Discovered · {0} ({1}/{2})\n{3}";
+
+            entries["可选支线完成 · 主目标与星级不受影响"] = "Side activity complete · Main goals and stars are unchanged";
+            entries["支线节点完成 · 沿沙谷寻找下一个点"] = "Activity checkpoint complete · Follow the sand valley to the next one";
+            entries["探险机制完成！"] = "Expedition activity complete!";
+            entries["完成一个任务节点 {0}/{1}"] = "Checkpoint complete {0}/{1}";
+            entries["回头"] = "Turn back";
+            entries["向左"] = "Head left";
+            entries["向右"] = "Head right";
+            entries["向前"] = "Head forward";
+            entries["可选支线 · {0}沿沙谷寻找下个点 · {1}米"] = "Side activity · {0} along the sand valley · {1} m";
+            entries["可选支线暂不可用 · 继续完成主目标"] = "Side activity unavailable · Continue your main goals";
+            entries[" · 可选支线"] = " · Side activity";
+            entries["支线完成 · 主目标与星级不受影响"] = "Side activity complete · Main goals and stars are unchanged";
+            entries["机制完成 · 继续完成本关收藏与金币目标"] = "Activity complete · Continue collecting this level's items and coins";
+            entries["洋流导流叶 · 张手划动"] = "Current vane · Open your hand and paddle";
+            entries["补给泡 · 捏合"] = "Oxygen bubble · Pinch";
+            entries["补给尚未浮起"] = "Waiting for the next bubble";
+            entries["缺氧珊瑚 · 捏合送氧"] = "Coral needs oxygen · Pinch to deliver";
+            entries["微弱生物光 · 张手指向"] = "Faint sea light · Point with an open hand";
+            entries["已照亮 · 捏合记录"] = "Lit up · Pinch to record";
+            entries["{0} · 观察对象"] = "{0} · Observation target";
+            entries["观察对象 · 稳定手射线"] = "Observation target · Keep your hand ray steady";
+            entries["护送海龟"] = "Escort the turtle";
+            entries["海龟安全圈"] = "Turtle safe zone";
+            entries["鱼鳞路标 · 捏合后游过"] = "Scale marker · Pinch, then swim through";
+            entries["纠缠海藻 · 避开此路"] = "Tangled kelp · Avoid this route";
+            entries["钥匙 · 按住捏合拾起"] = "Key · Hold a pinch to pick up";
+            entries["锁孔 · 偏转钥匙再松开"] = "Keyhole · Turn the key, then release";
+            entries["安全窗 · 捏合珍珠"] = "Safe window · Pinch the pearl";
+            entries["水母放电 · 等待绿色"] = "Jellyfish discharge · Wait for green";
+            entries["辨认章鱼 · 仅抓亮起真身"] = "Find the octopus · Catch only its glowing true form";
+            entries["张手挥动引导鱼群"] = "Wave an open hand to guide the fish";
+            entries["鱼群归巢圈"] = "Fish home zone";
+            entries["活珊瑚枝 · 按住捏合"] = "Living coral · Hold a pinch";
+            entries["修复底座 · 松开种植"] = "Coral base · Release to plant";
+            entries["塑料瓶 · 按住捏合"] = "Plastic bottle · Hold a pinch";
+            entries["金属罐 · 按住捏合"] = "Metal can · Hold a pinch";
+            entries["塑料回收箱"] = "Plastic recycling";
+            entries["金属回收箱"] = "Metal recycling";
+            entries["潮汐开关 · 捏合"] = "Tide switch · Pinch";
+            entries["闸门 · 绿色时捏合通过"] = "Gate · Pinch when green to pass";
+            entries["气泡环 · 划水穿过圆心"] = "Bubble ring · Swim through its center";
+            entries["守卫核心 · 绿灯时捏合"] = "Guardian core · Pinch on green";
+            entries["电鳗电极 · 双手各指一端"] = "Eel electrodes · Point one hand at each end";
+            entries["任务节点"] = "Activity checkpoint";
+            entries["张开手指向导流叶并缓慢划动，推动洋流；中央水流会轻推你"] = "Point an open hand at the vane and paddle slowly. The central current gently carries you.";
+            entries["捏合补给泡，再松手指向右侧珊瑚捏合送氧 · 氧气 {0}秒"] = "Pinch the bubble, release, then point and pinch the coral on the right · Oxygen {0}s";
+            entries["已携带氧气 · 松手后捏合右侧珊瑚 · 氧气 {0}秒"] = "Oxygen ready · Release, then pinch the coral on the right · {0}s left";
+            entries["张手指向暗处，保持照明 {0:0.0}秒"] = "Point an open hand into the dark · Hold the light {0:0.0}s";
+            entries["发光生物已照亮 · 捏合完成记录"] = "The creature is lit · Pinch to record it";
+            entries["头与手同时指向目标，张手稳定观察，再捏合快门"] = "Look and point at the target. Keep an open hand steady, then pinch to record.";
+            entries["对焦完成 · 保持头与手朝向并捏合快门"] = "In focus · Keep looking and pointing, then pinch";
+            entries["张手用射线引导海龟游向右侧安全圈，保持平缓"] = "Use your open-hand ray to guide the turtle toward the safe zone on the right. Move gently.";
+            entries["观察鱼鳞路标，先捏合选择出口，再坐姿划水穿过"] = "Read the scale marker. Pinch to choose an exit, then paddle through while seated.";
+            entries["路标已确认 · 坐姿划水穿过正确岔路圆心"] = "Route confirmed · Paddle through the correct branch marker";
+            entries["捏住钥匙别松手，偏转手射线22°，移到锁孔再松开"] = "Keep pinching the key. Turn your hand ray 22°, move to the keyhole, then release.";
+            entries["保持捏合并偏转钥匙22°"] = "Keep pinching and turn the key 22°";
+            entries["钥匙已转动 · 指向右侧锁孔并松开"] = "Key turned · Point at the keyhole on the right and release";
+            entries["水母红色放电时避让，绿色安全窗捏合收取珍珠"] = "Avoid red jellyfish discharges. Pinch the pearl during the green safe window.";
+            entries["跟踪短暂显形的青色章鱼真身，松开后捏合，避开伪装"] = "Follow the briefly glowing cyan octopus. Release, then pinch its true form. Avoid the decoys.";
+            entries["张手指向右侧鱼圈并实际挥动，推动小鱼归巢"] = "Point an open hand toward the fish zone on the right and wave to guide the school home.";
+            entries["捏住活珊瑚枝，拖到右侧底座，再松开种植"] = "Pinch the living coral, drag it to the base on the right, then release to plant it.";
+            entries["保持捏合拖到右侧底座，松开完成修复"] = "Keep pinching and drag to the base on the right. Release to finish the repair.";
+            entries["辨认塑料或金属，捏住垃圾拖到同类回收箱，再松开"] = "Identify plastic or metal. Pinch and drag the litter to the matching bin, then release.";
+            entries["先捏合左侧潮汐开关"] = "First pinch the tide switch on the left";
+            entries["闸门绿色时，松手后捏合右侧闸门通过"] = "When the gate turns green, release and pinch the gate on the right to pass.";
+            entries["坐姿划水，头部穿过下一个气泡环；无需站起"] = "Paddle while seated. Swim your head through the next bubble ring. No need to stand.";
+            entries["记住三次发光顺序，随后依次捏合符文"] = "Remember the three flashes, then pinch the runes in that order";
+            entries["按刚才顺序捏合三个符文 · 已输入 {0}/3"] = "Pinch the three runes in the same order · Entered {0}/3";
+            entries["双手张开各指向一个电极，持续充能；随后对准核心"] = "Point one open hand at each electrode. Hold to charge, then aim at the core.";
+            entries["已充能 · 核心绿灯节拍时捏合发射"] = "Charged · Pinch when the core flashes green";
+            entries["氧气补给中断 · 返回补给泡重新接力"] = "Oxygen delivery interrupted · Return to the supply bubble";
+            entries["物品未正确送达 · 松开双手后重新拾取"] = "Item not delivered · Release both hands and pick it up again";
+            entries["符文顺序不符 · 再看一次发光顺序"] = "Wrong rune order · Watch the flashes again";
+            entries["先观察安全窗口与目标提示，再松手重试"] = "Watch the safe window and target hint. Release, then try again.";
+
+            entries["性能面板"] = "PERFORMANCE";
+            entries["FPS约1秒平均 · 其他数值为最新帧\nCPU包含等待 · GPU：{0}"] = "FPS loop ~1s | other values: latest\nCPU includes waits | GPU: {0}";
+        }
+    }
+}

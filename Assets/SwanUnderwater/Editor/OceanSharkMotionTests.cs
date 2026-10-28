@@ -133,6 +133,8 @@ namespace SwanUnderwater.EditorTests
                 }
                 Check(detourTravel > 2f && longestHold < 2.5f, "legal start with a clear detour does not permanently hold");
 
+                CheckGentleYieldAndTurn();
+
                 Vector3 paused = first.transform.position; Quaternion pausedRotation = first.transform.rotation; float pausedSpeed = a.Speed;
                 foreach (float invalid in new[] {0f, -.01f, .11f, 1f, float.NaN, float.PositiveInfinity}) a.Tick(invalid, player, true, ray, false);
                 a.Tick(.02f, new Vector3(float.NaN, 0f, 0f), true, ray, false);
@@ -143,6 +145,72 @@ namespace SwanUnderwater.EditorTests
                 Debug.Log("SHARK_MOTION_TESTS_PASSED assertions=" + LastAssertionCount + "; actual Unity transforms, synthetic time and aiming; rendered swim and physical-hand acceptance remain separate");
             }
             finally { Object.DestroyImmediate(first); Object.DestroyImmediate(second); }
+        }
+
+        static void CheckGentleYieldAndTurn()
+        {
+            var animal = new GameObject("Shark near-diver turn fixture");
+            try
+            {
+                animal.transform.SetPositionAndRotation(Vector3.up * 4f, Quaternion.identity);
+                var motion = animal.AddComponent<OceanSharkMotion>();
+                motion.Configure(43, .9f, (from, to) => true);
+                Vector3 origin = animal.transform.position;
+                Quaternion rotation = animal.transform.rotation;
+                Vector3 threat = origin + Vector3.right * 4f;
+                motion.ReactToHit(Vector3.left, threat);
+                Check(motion.Escaping && motion.EscapeCount == 1, "turn fixture uses a real accepted hit");
+                motion.Tick(.02f, threat, false, default, false);
+                CheckStep(animal.transform, origin, rotation, .02f);
+                Check(Quaternion.Angle(rotation, animal.transform.rotation) < OceanSharkMotion.MaximumTurnRate * .02f * .7f,
+                    "new lateral escape builds its turn instead of instant full-rate yaw");
+
+                animal.transform.SetPositionAndRotation(origin, Quaternion.identity);
+                motion.Configure(43, .9f, (from, to) => true);
+                Vector3 player = origin - Vector3.forward * 1.2f;
+                float initialDistance = Vector3.Distance(origin, player);
+                for (int frame = 0; frame < 30; frame++)
+                {
+                    Vector3 before = animal.transform.position; Quaternion pose = animal.transform.rotation;
+                    motion.Tick(.02f, player, false, default, false);
+                    CheckStep(animal.transform, before, pose, .02f); CheckHome(motion, animal.transform.position);
+                }
+                Check(motion.YieldCount == 1 && Vector3.Distance(animal.transform.position, player) > initialDistance + .1f,
+                    "a nearby diver triggers one gentle departure before the old cruise goal expires");
+                Check(motion.DodgeCount == 0 && motion.EscapeCount == 0,
+                    "player proximity cannot invent a hit or gun-aim event");
+                for (int frame = 0; frame < 30; frame++)
+                    motion.Tick(.02f, animal.transform.position - Vector3.forward * 1.2f, false, default, false);
+                Check(motion.YieldCount == 1, "following diver cannot trigger a new proximity plan every frame");
+                motion.ReactToHit(Vector3.forward, player);
+                Check(motion.EscapeCount == 1 && motion.Escaping, "a hit still overrides gentle yielding");
+                int yields = motion.YieldCount;
+                for (int frame = 0; frame < 30; frame++)
+                    motion.Tick(.02f, animal.transform.position - Vector3.forward * 1.2f, false, default, false);
+                Check(motion.YieldCount == yields, "proximity never replaces an active escape route");
+
+                motion.Configure(43, .9f, (from, to) => true);
+                for (int frame = 0; frame < 80; frame++)
+                    motion.Tick(.02f, animal.transform.position - Vector3.forward, true,
+                        new Ray(animal.transform.position - Vector3.forward, Vector3.forward), true);
+                Vector3 readyPosition = animal.transform.position;
+                Check(motion.YieldCount == 0 && motion.DodgeCount == 0 && motion.Speed == 0f && motion.MotionState == "capture",
+                    "earned capture remains reachable despite nearby diver and aim");
+                motion.Tick(.02f, readyPosition, false, default, true);
+                Check(animal.transform.position == readyPosition, "capture cannot drift away through proximity avoidance");
+
+                motion.Configure(43, .9f, (from, to) => true);
+                for (int frame = 0; frame < 50; frame++)
+                    motion.Tick(.02f, origin + Vector3.up * 5f, false, default, false);
+                Check(motion.YieldCount == 0, "a vertically distant diver does not start a planar false alarm");
+                motion.Configure(43, .9f, (from, to) => false);
+                Vector3 blocked = animal.transform.position;
+                for (int frame = 0; frame < 180; frame++)
+                    motion.Tick(.02f, blocked - Vector3.forward, false, default, false);
+                Check(motion.YieldCount == 0 && animal.transform.position == blocked,
+                    "proximity cannot manufacture movement through an unavailable water route");
+            }
+            finally { Object.DestroyImmediate(animal); }
         }
 
         static void CheckStep(Transform body, Vector3 before, Quaternion rotation, float dt)

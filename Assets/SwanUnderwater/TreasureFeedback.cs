@@ -55,7 +55,8 @@ namespace SwanUnderwater
         readonly float[] coinDepths = new float[CoinCapacity];
         readonly System.Random random = new System.Random(2046);
         bool explorationToast;
-        struct Notification { public string text; public float duration; public bool gold, completeSound, exploration; }
+        struct Notification { public string text; public Func<string> presentation; public float duration; public bool gold, completeSound, exploration; }
+        Notification activeNotification;
         struct Coin { public Vector3 origin, velocity, spin; public Quaternion rotation; public float delay, life, size; public bool rain; }
 
         public void Initialize(Camera camera)
@@ -88,6 +89,7 @@ namespace SwanUnderwater
                     "你收集到1种贝壳：该贝壳你已经拥有（1/5）" + GrabHintText;
                 foreach (int size in new[] { 24, 32, 42 }) font.RequestCharactersInTexture(warm, size, FontStyle.Normal);
                 initialized = true;
+                OceanLanguage.Changed += RefreshLanguage;
                 RefreshProgress();
                 Debug.Log($"[TreasureFeedback] ready font={font.name}, shells=5, pooledCoins={CoinCapacity}, coinSubmeshes={coinMesh.subMeshCount}");
             }
@@ -173,10 +175,10 @@ namespace SwanUnderwater
             for (int i = 0; i < 5; i++)
             {
                 nameLabels[i] = MakeText(hudRoot.transform, "Shell name " + i, 24, ChipPosition(i), new Vector2(88f, 38f));
-                nameLabels[i].text = Names[i];
+                OceanLanguage.Bind(nameLabels[i], Names[i]);
             }
             Text grabHint = MakeText(hudRoot.transform, "How to collect", 24, new Vector2(0f, -74f), new Vector2(384f, 30f));
-            grabHint.text = GrabHintText;
+            OceanLanguage.Bind(grabHint, GrabHintText);
             grabHint.color = new Color(.64f, .83f, .86f);
         }
 
@@ -198,7 +200,7 @@ namespace SwanUnderwater
             Font titleFont = Resources.Load<Font>("Loading/OceanTitleFont");
             if (titleFont != null) jackpotHeading.font = titleFont;
             jackpotHeading.font.RequestCharactersInTexture("宝藏大奖", 78, FontStyle.Normal);
-            jackpotHeading.text = "宝藏大奖";
+            OceanLanguage.Bind(jackpotHeading, "宝藏大奖");
             jackpotHeading.gameObject.AddComponent<TreasureTextGradient>().Gold = true;
             jackpotHeading.gameObject.SetActive(false);
         }
@@ -229,7 +231,7 @@ namespace SwanUnderwater
 
         void RefreshProgress()
         {
-            countLabel.text = "已收集 " + DistinctCount + "/5";
+            countLabel.text = OceanLanguage.Format("已收集 {0}/5", DistinctCount);
             for (int i = 0; i < 5; i++)
             {
                 bool collected = (CollectedMask & (1 << i)) != 0;
@@ -250,7 +252,10 @@ namespace SwanUnderwater
             if (string.IsNullOrEmpty(name)) name = Names[Mathf.Clamp(kind, 0, 4)];
             string message = duplicate ? "该贝壳你已经拥有（" + DistinctCount + "/5）"
                 : "你收集到1种贝壳：" + name + "（" + DistinctCount + "/5）";
-            Enqueue(new Notification { text = message, duration = duplicate ? 1.8f : 2.8f });
+            int snapshotCount = DistinctCount;
+            Enqueue(new Notification { text = message, duration = duplicate ? 1.8f : 2.8f,
+                presentation = () => duplicate ? OceanLanguage.Format("该贝壳你已经拥有（{0}/5）", snapshotCount) :
+                    OceanLanguage.Format("你收集到1种贝壳：{0}（{1}/5）", OceanLanguage.Text(name), snapshotCount) });
         }
 
         public void SetJournalVisible(bool value)
@@ -260,27 +265,38 @@ namespace SwanUnderwater
         }
 
         public void ShowCampaignMessage(string message, bool gold = false, bool pickup = false, bool duplicate = false, bool priority = false, bool fanfare = true)
+            => ShowLocalizedCampaignMessage(message, null, gold, pickup, duplicate, priority, fanfare);
+
+        /// <summary>The raw message retains gameplay identity; the factory only renders the
+        /// captured event values in the selected language, including while this toast is queued.</summary>
+        public void ShowLocalizedCampaignMessage(string message, Func<string> presentation, bool gold = false, bool pickup = false, bool duplicate = false, bool priority = false, bool fanfare = true)
         {
             if (!initialized || released || !visible) return;
             if (pickup) pickupAudio.PlayOneShot(duplicate ? duplicateClip : collectClip, duplicate ? .45f : .8f);
-            var notification = new Notification { text = message, duration = gold ? 3.8f : 2.6f, gold = gold, completeSound = gold && fanfare };
+            var notification = new Notification { text = message, presentation = presentation, duration = gold ? 3.8f : 2.6f, gold = gold, completeSound = gold && fanfare };
             if (priority && !IsCelebrating) { queueStart = queueCount = 0; StartToast(notification); }
             else Enqueue(notification);
         }
 
         /// <summary>Optional area captions never queue and yield immediately to collection/campaign feedback.</summary>
         public bool TryShowExplorationMessage(string message)
+            => TryShowLocalizedExplorationMessage(message, null);
+
+        public bool TryShowLocalizedExplorationMessage(string message, Func<string> presentation)
         {
             if (!CanShowExplorationMessage || string.IsNullOrWhiteSpace(message)) return false;
-            StartToast(new Notification { text = message, duration = 2.6f, exploration = true });
+            StartToast(new Notification { text = message, presentation = presentation, duration = 2.6f, exploration = true });
             return true;
         }
 
         /// <summary>Achievement notices yield to pickups, the coin celebration and campaign results.</summary>
         public bool TryShowAchievementMessage(string message)
+            => TryShowLocalizedAchievementMessage(message, null);
+
+        public bool TryShowLocalizedAchievementMessage(string message, Func<string> presentation)
         {
             if (!CanShowExplorationMessage || string.IsNullOrWhiteSpace(message)) return false;
-            StartToast(new Notification { text = message, duration = 3.2f, gold = true, completeSound = true, exploration = true });
+            StartToast(new Notification { text = message, presentation = presentation, duration = 3.2f, gold = true, completeSound = true, exploration = true });
             return true;
         }
 
@@ -326,8 +342,16 @@ namespace SwanUnderwater
             BeginCoins();
             // The jackpot starts with its burst; do not leave its title waiting behind a shell toast.
             if (toastDuration > 0f && !explorationToast && CurrentNotification != HiddenRewardText)
-                Enqueue(new Notification { text = CurrentNotification, duration = Mathf.Max(1.5f, toastDuration - (float)(Time.unscaledTimeAsDouble - toastStarted)), gold = CurrentNotification == LevelCompleteText });
-            StartToast(new Notification { text = rewardText, duration = CelebrationDuration, gold = true });
+            {
+                var previous = activeNotification;
+                previous.duration = Mathf.Max(1.5f, toastDuration - (float)(Time.unscaledTimeAsDouble - toastStarted));
+                previous.gold = CurrentNotification == LevelCompleteText;
+                previous.completeSound = false;
+                Enqueue(previous);
+            }
+            StartToast(new Notification { text = rewardText, duration = CelebrationDuration, gold = true,
+                presentation = () => collected >= target ? OceanLanguage.Text(HiddenRewardText) :
+                    OceanLanguage.Format("金币 {0}/{1} · 继续探索，寻找剩余金币", collected, target) });
         }
 
         void Enqueue(Notification notification)
@@ -341,17 +365,32 @@ namespace SwanUnderwater
 
         void StartToast(Notification notification)
         {
+            activeNotification = notification;
             explorationToast = notification.exploration;
             CurrentNotification = notification.text;
             toastLabel.fontSize = notification.gold ? 42 : 32;
-            toastLabel.text = notification.text;
+            RefreshToastLanguage();
             jackpotHeading.gameObject.SetActive(notification.text == HiddenRewardText);
             toastGradient.Gold = notification.gold;
-            float width = Mathf.Max(1f, toastLabel.preferredWidth);
-            toastLabel.rectTransform.localScale = Vector3.one * Mathf.Min(1f, 930f / width);
             toastStarted = Time.unscaledTimeAsDouble; toastDuration = notification.duration;
             toastAlpha.alpha = 0f;
             if (notification.completeSound) rewardAudio.PlayOneShot(completeClip, .75f);
+        }
+
+        void RefreshToastLanguage()
+        {
+            toastLabel.text = activeNotification.presentation != null ? activeNotification.presentation() : OceanLanguage.Text(activeNotification.text);
+            float width = Mathf.Max(1f, toastLabel.preferredWidth);
+            toastLabel.rectTransform.localScale = Vector3.one * Mathf.Min(1f, 930f / width);
+        }
+
+        void RefreshLanguage()
+        {
+            if (!initialized || released) return;
+            RefreshProgress();
+            // Keep the original clock, queue, sound and reward state. A locale change
+            // changes glyphs and fitting only, never starts a second notification.
+            if (toastDuration > 0f) RefreshToastLanguage();
         }
 
         public void SetVisible(bool value)
@@ -524,6 +563,7 @@ namespace SwanUnderwater
 
         void CancelTransient()
         {
+            activeNotification = default;
             toastDuration = 0f; CurrentNotification = ""; explorationToast = false; queueStart = queueCount = 0;
             Array.Clear(notifications, 0, notifications.Length);
             celebrationActive = false; ActiveCelebrationCoins = 0;
@@ -538,6 +578,7 @@ namespace SwanUnderwater
         void OnDestroy() => Release();
         void Release()
         {
+            OceanLanguage.Changed -= RefreshLanguage;
             if (released) return;
             CancelTransient(); released = true;
             DestroyOwned(hudRoot); DestroyOwned(toastRoot); DestroyOwned(audioRoot); DestroyOwned(uiMaterial); DestroyOwned(coinMaterial);

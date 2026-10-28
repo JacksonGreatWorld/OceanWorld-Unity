@@ -182,6 +182,14 @@ namespace SwanUnderwater.EditorTests
                     yield return null;
                 }
                 yield return null;
+                // The map commit precedes the menu's release-to-arm quarantine.
+                // Observe actual readiness instead of assuming one Editor frame is enough.
+                double inputDeadline = Time.realtimeSinceStartupAsDouble + 8;
+                while (!hunt.GameplayActive)
+                {
+                    Check(Time.realtimeSinceStartupAsDouble < inputDeadline, "bounded input release after map commit " + level);
+                    yield return null;
+                }
                 Check(campaign.State.Current.level == level && hunt.GameplayActive, "requested level is playable " + level);
                 Check(world.ActiveEnvironment == OceanEnvironmentProfile.ForLevel(level), "rendered environment matches durable level " + level);
                 Check(world.ActiveEnvironmentRoot != null && world.ActiveEnvironmentRoot.gameObject.activeInHierarchy, "current environment is visible");

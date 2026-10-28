@@ -45,7 +45,7 @@ namespace SwanUnderwater
         {
             int count = naturalist?.State.AvailableCount ?? 0;
             string title = count == OceanSpeciesCatalog.AvailableCount ? "深蓝博物学家" : count >= 20 ? "海洋收藏家" : count >= 10 ? "珊瑚探索者" : "见习观察员";
-            return $"{title} · 当前已发现 {count}/{OceanSpeciesCatalog.AvailableCount} · 稀有 {naturalist?.State.AvailableRareCount ?? 0}";
+            return F("{0} · 当前已发现 {1}/{2} · 稀有 {3}", L(title), count, OceanSpeciesCatalog.AvailableCount, naturalist?.State.AvailableRareCount ?? 0);
         }
         bool NaturalistEntryVisible(int id) => OceanSpeciesCatalog.IsAvailable(id) || (naturalist != null && naturalist.State.Contains(id));
         void ChangeNaturalist(int delta)
@@ -69,26 +69,38 @@ namespace SwanUnderwater
             for (int id = 0; id < OceanSpeciesCatalog.Count; id++)
                 if (NaturalistEntryVisible(id)) { pageCount++; if (id <= naturalistIndex) ordinal++; }
             naturalistPage.text = ordinal + " / " + pageCount;
-            observationToggle.label.text = "自然观察：" + (naturalist != null && naturalist.ObservationEnabled ? "开" : "关");
+            observationToggle.label.text = F("自然观察：{0}", L(naturalist != null && naturalist.ObservationEnabled ? "开" : "关"));
             SetEnabled(observationToggle, naturalist != null && naturalist.Store.Writable);
             if (!OceanSpeciesCatalog.IsAvailable(entry.Id))
             {
-                naturalistName.text = entry.Name + " · 历史记录";
-                naturalistStatus.text = "已收藏 · 原记录保留";
+                naturalistName.text = F("{0} · 历史记录", L(entry.Name));
+                naturalistStatus.text = L("已收藏 · 原记录保留");
                 naturalistStatus.color = Gold;
-                naturalistDetails.text = entry.Description + "\n\n本版暂停投放，不计入当前图鉴收集目标。已有观察记录保留。";
+                naturalistDetails.text = F("{0}\n\n本版暂停投放，不计入当前图鉴收集目标。已有观察记录保留。", L(entry.Description));
+                FitNaturalistDetails(naturalistDetails);
                 if (naturalistPreview != null) naturalistPreview.SetActive(false);
                 return;
             }
-            naturalistName.text = entry.Name + (entry.Rare ? " · 稀有观察" : "");
-            naturalistStatus.text = known ? "已发现 · 已保存" : "尚未发现\n第" + entry.FirstLevel + "关起可观察";
+            naturalistName.text = entry.Rare ? F("{0} · 稀有观察", L(entry.Name)) : L(entry.Name);
+            naturalistStatus.text = known ? L("已发现 · 已保存") : F("尚未发现\n第{0}关起可观察", entry.FirstLevel);
             naturalistStatus.color = known ? Gold : Muted;
-            naturalistDetails.text = known ? entry.Description + "\n\n栖息线索：" + entry.Habitat + "\n" + entry.SearchHint
-                : "探索线索：" + entry.SearchHint + "\n\n在合适关卡找到它，用手射线指向并保持观察。\n" +
-                    (entry.Id >= 15 && entry.Id <= 24 ? "这是一类贝壳外形记录，不代表新增活体物种。" : "发现后解锁生物说明和近距离模型。" );
+            naturalistDetails.text = known ? F("{0}\n\n栖息线索：{1}\n{2}", L(entry.Description), L(entry.Habitat), L(entry.SearchHint))
+                : F("探索线索：{0}\n\n在合适关卡找到它，用手射线指向并保持观察。\n{1}", L(entry.SearchHint),
+                    L(entry.Id >= 15 && entry.Id <= 24 ? "这是一类贝壳外形记录，不代表新增活体物种。" : "发现后解锁生物说明和近距离模型。"));
+            FitNaturalistDetails(naturalistDetails);
             if (!known) { if (naturalistPreview != null) naturalistPreview.SetActive(false); return; }
             if (previewNaturalistIndex != entry.Id || naturalistPreview == null) CreateNaturalistPreview(entry);
         }
+        static void FitNaturalistDetails(Text details)
+        {
+            // Only this long-form card adapts, on presentation refresh. Keep a
+            // readable floor and leave menu text and hit regions unchanged.
+            details.fontSize=21;
+            while(details.fontSize>18&&details.preferredHeight>details.rectTransform.rect.height+.5f)details.fontSize--;
+        }
+#if UNITY_EDITOR
+        public static void FitNaturalistDetailsForValidation(Text details)=>FitNaturalistDetails(details);
+#endif
         void CreateNaturalistPreview(OceanSpeciesDefinition entry)
         {
             if (naturalistPreview != null) DestroyOwned(naturalistPreview);
@@ -98,7 +110,7 @@ namespace SwanUnderwater
             else
             {
                 GameObject prefab = Resources.Load<GameObject>(entry.ResourcePath);
-                if (prefab == null) { naturalistStatus.text += "\n模型待资源验证"; return; }
+                if (prefab == null) { naturalistStatus.text += L("\n模型待资源验证"); return; }
                 model = Instantiate(prefab, naturalistAnchor, false);
             }
             naturalistPreview = model; model.name = "Naturalist preview " + entry.Id;

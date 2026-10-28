@@ -55,7 +55,7 @@ namespace SwanUnderwater.Editor
             public string detail, saveDirectory;
             public string originalQualityName, restoredQualityName, originalPipelinePath, restoredPipelinePath;
             public string restoredMobilePipelinePath, qualityRestorationPhase;
-            public string scope = "Actual production scene and entry in a non-XR Editor Play session, Mobile URP runtime clone, real reef meshes/materials/lights/fog. Camera-only monocular 1280x720 images; close-up positions and shark test time/hits are synthetic. Not headset tracking, stereo quality, device performance or player comfort acceptance. No scene/assets are saved. Editor signing identity cannot automatically upload; no leaderboard UI/page request is invoked.";
+            public string scope = "Actual production scene and entry in a non-XR Editor Play session, Mobile URP runtime clone, real reef meshes/materials/lights/fog. Camera-only monocular 1280x720 images; close-up positions and shark test time/hits are synthetic. Not headset tracking, stereo quality, device performance or player comfort acceptance. No scene/assets are saved. Editor signing identity blocks automatic uploads; no leaderboard UI/page request is invoked.";
             public List<ViewRecord> screenshots = new List<ViewRecord>();
             public List<string> groundingDiagnostics = new List<string>();
             public List<string> errors = new List<string>();

@@ -10,7 +10,8 @@ namespace SwanUnderwater
         const string SeenKey = "ocean_interactive_tutorial_seen_v1";
         public readonly OceanInteractiveTutorialRules Rules = new OceanInteractiveTutorialRules();
         public bool Active => Rules.Active;
-        public string PracticeHint { get; private set; } = "";
+        string practiceHint = "";
+        public string PracticeHint { get => OceanLanguage.Text(practiceHint); private set => practiceHint = value; }
         Camera view;
         HandSwimController hands;
         OceanCampaignPanel panel;
@@ -103,7 +104,7 @@ namespace SwanUnderwater
                 if (distance >= nearest) continue;
                 nearest = distance; armed = side == OceanHandSide.HandLeft ? hands.LeftGraspArmed : hands.RightGraspArmed;
             }
-            PracticeHint = float.IsPositiveInfinity(nearest) ? "把手放到头显可见范围 · 随时从菜单跳过" : nearest > .18f ?
+            PracticeHint = float.IsPositiveInfinity(nearest) ? "把手放到头显可见范围 · 可点关闭教学退出" : nearest > .18f ?
                 "再靠近一点 · 练习扇贝不计入收藏" : !armed ? "先张开手，再握拳 · 练习扇贝不计入收藏" : "现在握拳，拾取练习扇贝";
         }
 

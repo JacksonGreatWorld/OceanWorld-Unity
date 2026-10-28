@@ -27,7 +27,10 @@ namespace SwanUnderwater
                     facts.CompletedLevels++; facts.TotalStars += stars;
                     environments.Add(OceanEnvironmentIdentity.ForLevel(i + 1));
                     var definition = OceanLevelCatalog.Get(i + 1);
-                    if (definition.Mechanic != OceanMechanicKind.None) mechanics |= 1 << ((int)definition.Mechanic - 1);
+                    // Historical stars prove a mandatory mechanic only. Optional
+                    // activities were added later and cannot be inferred from them.
+                    if (definition.Mechanic != OceanMechanicKind.None && !definition.MechanicOptional)
+                        mechanics |= 1 << ((int)definition.Mechanic - 1);
                     if (stars == 3) { facts.ThreeStarLevels++; provenCoins += definition.CoinCount; }
                     if (i + 1 == OceanLevelCatalog.Count) facts.CampaignFinished = true;
                 }

@@ -55,7 +55,8 @@ namespace SwanUnderwater
             if (Instance != null && Instance != this) { Destroy(this); return; }
             Instance = this;
             diagnostics = GetComponent<RuntimeDiagnostics>();
-            font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            font = Resources.Load<Font>("Treasure/TreasureFont") ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            OceanLanguage.Changed += RefreshLanguage;
             // Resources keeps the small overlay shader in Release builds. ZTest Always makes
             // the diagnostic panel readable when nearby scenery crosses its fixed depth.
             Shader shader = Resources.Load<Shader>("PerformanceHudUI");
@@ -103,7 +104,7 @@ namespace SwanUnderwater
             panel = new GameObject("Performance HUD", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(Image));
             panel.hideFlags = HideFlags.DontSave;
             var rect = (RectTransform)panel.transform;
-            rect.sizeDelta = new Vector2(480, 238);
+            rect.sizeDelta = new Vector2(480, 258);
             canvas = panel.GetComponent<Canvas>();
             canvas.renderMode = RenderMode.WorldSpace;
             canvas.overrideSorting = true;
@@ -114,23 +115,23 @@ namespace SwanUnderwater
             background.raycastTarget = false;
             if (overlayMaterial != null) background.material = overlayMaterial;
 
-            MakeText("Title", "PERFORMANCE", 18, 12, 290, 26, 20, LabelColor, FontStyle.Bold);
-            refresh = MakeText("Refresh", Missing + " Hz", 330, 12, 132, 26, 20, LabelColor);
+            MakeText("Title", "性能面板", 18, 12, 290, 34, 20, LabelColor, FontStyle.Bold);
+            refresh = MakeText("Refresh", Missing + " Hz", 330, 12, 132, 34, 20, LabelColor);
             refresh.alignment = TextAnchor.MiddleRight;
-            fps = MakeCell("FPS", 18, 49);
-            cpu = MakeCell("CPU", 250, 49);
-            gpu = MakeCell("GPU", 18, 88);
-            draw = MakeCell("Draw", 250, 88);
-            tri = MakeCell("Tri", 18, 127);
-            setPass = MakeCell("Pass", 250, 127);
-            note = MakeText("Scope", "FPS loop ~1s | other values: latest\nCPU includes waits | GPU: " + Missing,
-                18, 177, 444, 48, 17, LabelColor);
+            fps = MakeCell("FPS", "FPS", 18, 52);
+            cpu = MakeCell("CPU", "CPU", 250, 52);
+            gpu = MakeCell("GPU", "GPU", 18, 96);
+            draw = MakeCell("Draw", "绘制", 250, 96);
+            tri = MakeCell("Tri", "三角", 18, 140);
+            setPass = MakeCell("Pass", "切换", 250, 140);
+            note = MakeText("Scope", "",
+                18, 190, 444, 60, 17, LabelColor);
         }
 
-        private Text MakeCell(string label, float x, float y)
+        private Text MakeCell(string metric, string label, float x, float y)
         {
-            MakeText(label + " Label", label, x, y, 64, 34, 23, LabelColor);
-            Text value = MakeText(label + " Value", Missing, x + 64, y, 148, 34, 26, TextColor, FontStyle.Bold);
+            MakeText(metric + " Label", label, x, y, 64, 44, 23, LabelColor);
+            Text value = MakeText(metric + " Value", Missing, x + 64, y, 148, 44, 26, TextColor, FontStyle.Bold);
             value.alignment = TextAnchor.MiddleRight;
             return value;
         }
@@ -144,13 +145,15 @@ namespace SwanUnderwater
             rect.anchorMin = rect.anchorMax = new Vector2(0, 1);
             rect.pivot = new Vector2(0, 1);
             rect.anchoredPosition = new Vector2(x, -y);
-            rect.sizeDelta = new Vector2(width, height);
+            // A too-short Truncate box removes a complete line with the shared
+            // CJK font, including English titles and numeric sample values.
+            rect.sizeDelta = new Vector2(width, Mathf.Max(height, Mathf.Ceil(size * 1.55f + 2f)));
             Text text = child.GetComponent<Text>();
             text.font = font;
             text.fontSize = size;
             text.fontStyle = style;
             text.color = color;
-            text.text = initial;
+            OceanLanguage.Bind(text, initial);
             text.alignment = TextAnchor.MiddleLeft;
             text.horizontalOverflow = HorizontalWrapMode.Overflow;
             text.verticalOverflow = VerticalWrapMode.Truncate;
@@ -174,8 +177,13 @@ namespace SwanUnderwater
             tri.text = Count(fresh && live.trianglesAvailable, live.triangles);
             setPass.text = Count(fresh && live.setPassCallsAvailable, live.setPassCalls);
             refresh.text = Number(fresh && live.displayRefreshAvailable, live.displayRefreshHz, " Hz", "0");
-            note.text = "FPS loop ~1s | other values: latest\nCPU includes waits | GPU: " +
-                (fresh && live.gpuAvailable ? SourceLabel(live.gpuSource) : Missing);
+            note.text = OceanLanguage.Format("FPS约1秒平均 · 其他数值为最新帧\nCPU包含等待 · GPU：{0}",
+                fresh && live.gpuAvailable ? SourceLabel(live.gpuSource) : Missing);
+        }
+
+        private void RefreshLanguage()
+        {
+            if (panel != null && note != null) RefreshLabels();
         }
 
         private static string Number(bool available, double value, string unit = "", string format = "0.0") =>
@@ -238,6 +246,7 @@ namespace SwanUnderwater
 
         private void OnDestroy()
         {
+            OceanLanguage.Changed -= RefreshLanguage;
             if (Instance == this) Instance = null;
             if (panel != null) Destroy(panel);
             if (overlayMaterial != null) Destroy(overlayMaterial);

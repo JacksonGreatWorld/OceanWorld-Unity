@@ -1,0 +1,1097 @@
+{
+  "schemaVersion": 1,
+  "tool": "OceanMarineExpansionBake",
+  "utc": "2026-10-17T09:56:42.3601330Z",
+  "unity": "6000.0.84f1",
+  "state": "admitted",
+  "error": "",
+  "species": "Atlantic mackerel",
+  "uid": "eca6071c26fc4013b8c94a3f37a434c7",
+  "author": "Ishxxn (@1shxxn)",
+  "license": "CC-BY-4.0",
+  "sourceUrl": "https://sketchfab.com/3d-models/atlantic-mackerel-animated-and-game-ready-eca6071c26fc4013b8c94a3f37a434c7",
+  "packageSha256": "1dc61bf813ed2da8c0e1e4f55936d6f83daa3bb1088b8a0fa94cf940727c8653",
+  "selectedClip": "Armature|Mackerel_Swim",
+  "prefabPath": "Assets/Resources/MarineExpansion/mackerel.prefab",
+  "animationPolicy": "Original Generic Swim skin animation; no procedural fish deformation or curve removal. Native ASTC4x4 opaque base and lossless RGBA32 AG normal, all mips; verified Unity DXT5nm policy.",
+  "success": true,
+  "applyRootMotion": false,
+  "animationValidated": true,
+  "skinnedRenderers": 1,
+  "bones": 16,
+  "vertices": 3354,
+  "poseSamples": 61,
+  "finalizationUpdates": 3,
+  "triangles": 5986,
+  "sourceDeclaredTriangles": 6002,
+  "maxVertexTravel": 3.9466352462768555,
+  "maxCenterTravel": 1.783249020576477,
+  "maxHeadTravel": 0.03675262629985809,
+  "maxPoseDiagonal": 7.881556034088135,
+  "loopVertexGap": 0.0020926932338625193,
+  "rootPositionTravel": 0.0,
+  "loopBoneAngle": 0.1978234350681305,
+  "sampleEndTime": 0.9998999834060669,
+  "reviewedThresholdPolicy": "Only this exact licensed mackerel source/Swim: diagnostic-02 CPU close-ups reviewed intact/natural tail flex; BakeMesh(true)+TransformPoint scale contract differs from false+TRS-no-scale by 1.74e-6. Tail travel<=.60 initial body diagonal and AABB-center travel<=.30 allow authored tail bends; head drift<=.08 and posed diagonal<=1.30 prevent whole-body drift/explosion. Original root and near-end vertex/bone loop gates unchanged. Evidence: original completed admission, identified by sourceReportSha256; private diagnostic artifacts are not redistributed.",
+  "textureUvScale": {
+    "x": 1.0,
+    "y": 0.996268630027771
+  },
+  "boundsMin": {
+    "x": -1.6258829832077026,
+    "y": -1.4461466073989868,
+    "z": -3.3088550567626953
+  },
+  "boundsMax": {
+    "x": 0.19369769096374512,
+    "y": 1.3860896825790405,
+    "z": 3.632244110107422
+  },
+  "animatedBoundsMin": {
+    "x": -1.6258829832077026,
+    "y": -1.4484485387802124,
+    "z": -3.6784021854400635
+  },
+  "animatedBoundsMax": {
+    "x": 2.309241771697998,
+    "y": 1.409542441368103,
+    "z": 3.6792562007904053
+  },
+  "skinLocalMin": {
+    "x": -0.7174017429351807,
+    "y": -0.4503732919692993,
+    "z": -0.27490419149398804
+  },
+  "skinLocalMax": {
+    "x": 0.7175681591033936,
+    "y": 0.3170972466468811,
+    "z": 0.28249210119247437
+  },
+  "sourceNoseDirection": {
+    "x": 0.21304810047149658,
+    "y": -0.00628258753567934,
+    "z": 0.9770215153694153
+  },
+  "sourceUpDirection": {
+    "x": -0.06316597759723663,
+    "y": 0.9977988004684448,
+    "z": 0.020190086215734482
+  },
+  "headingCorrectionEuler": {
+    "x": 358.8431091308594,
+    "y": 347.7471923828125,
+    "z": 356.3777160644531
+  },
+  "sourcePrincipalAxis": "Z",
+  "headingVerification": "Original profile PNG visually reviewed: head left, tail right, dorsal top; measured skin UV-region centroids define +Z nose/+Y dorsal on an unscaled wrapper. Rendered nose/swim acceptance still required.",
+  "geometryPath": "Assets/Resources/MarineExpansion/mackerel-geometry.json",
+  "posedBounds": [
+    {
+      "min": {
+        "x": -1.6258829832077026,
+        "y": -1.4461466073989868,
+        "z": -3.3088550567626953
+      },
+      "max": {
+        "x": 0.19369769096374512,
+        "y": 1.3860896825790405,
+        "z": 3.632244110107422
+      }
+    },
+    {
+      "min": {
+        "x": -1.6031036376953125,
+        "y": -1.446219801902771,
+        "z": -3.319319248199463
+      },
+      "max": {
+        "x": 0.19369769096374512,
+        "y": 1.3866578340530396,
+        "z": 3.632606029510498
+      }
+    },
+    {
+      "min": {
+        "x": -1.5761351585388184,
+        "y": -1.4463043212890625,
+        "z": -3.331488847732544
+      },
+      "max": {
+        "x": 0.19369769096374512,
+        "y": 1.3873200416564941,
+        "z": 3.632985830307007
+      }
+    },
+    {
+      "min": {
+        "x": -1.5227882862091064,
+        "y": -1.4464648962020874,
+        "z": -3.3548743724823
+      },
+      "max": {
+        "x": 0.19369769096374512,
+        "y": 1.3885985612869263,
+        "z": 3.6336987018585205
+      }
+    },
+    {
+      "min": {
+        "x": -1.4449877738952637,
+        "y": -1.446677565574646,
+        "z": -3.3873372077941895
+      },
+      "max": {
+        "x": 0.19369769096374512,
+        "y": 1.3903828859329224,
+        "z": 3.6347436904907227
+      }
+    },
+    {
+      "min": {
+        "x": -1.3485116958618164,
+        "y": -1.4469361305236816,
+        "z": -3.4249439239501953
+      },
+      "max": {
+        "x": 0.19489920139312744,
+        "y": 1.3924593925476074,
+        "z": 3.6358394622802734
+      }
+    },
+    {
+      "min": {
+        "x": -1.233614444732666,
+        "y": -1.4472401142120361,
+        "z": -3.4660263061523438
+      },
+      "max": {
+        "x": 0.19729232788085938,
+        "y": 1.3947417736053467,
+        "z": 3.6373910903930664
+      }
+    },
+    {
+      "min": {
+        "x": -1.100602626800537,
+        "y": -1.4475576877593994,
+        "z": -3.5087132453918457
+      },
+      "max": {
+        "x": 0.20001959800720215,
+        "y": 1.397146463394165,
+        "z": 3.6389870643615723
+      }
+    },
+    {
+      "min": {
+        "x": -0.9531257152557373,
+        "y": -1.447852611541748,
+        "z": -3.550105333328247
+      },
+      "max": {
+        "x": 0.20299410820007324,
+        "y": 1.3995361328125,
+        "z": 3.640763998031616
+      }
+    },
+    {
+      "min": {
+        "x": -0.7895881533622742,
+        "y": -1.4481170177459717,
+        "z": -3.5889649391174316
+      },
+      "max": {
+        "x": 0.20624125003814697,
+        "y": 1.4018611907958984,
+        "z": 3.6427230834960938
+      }
+    },
+    {
+      "min": {
+        "x": -0.6141083240509033,
+        "y": -1.4483075141906738,
+        "z": -3.6227080821990967
+      },
+      "max": {
+        "x": 0.20967519283294678,
+        "y": 1.4039933681488037,
+        "z": 3.64469838142395
+      }
+    },
+    {
+      "min": {
+        "x": -0.4276568591594696,
+        "y": -1.4483898878097534,
+        "z": -3.649773597717285
+      },
+      "max": {
+        "x": 0.21327725052833557,
+        "y": 1.4058650732040405,
+        "z": 3.646890640258789
+      }
+    },
+    {
+      "min": {
+        "x": -0.2314152717590332,
+        "y": -1.4483740329742432,
+        "z": -3.668717861175537
+      },
+      "max": {
+        "x": 0.21901804208755493,
+        "y": 1.4074110984802246,
+        "z": 3.6490912437438965
+      }
+    },
+    {
+      "min": {
+        "x": -0.19366015493869781,
+        "y": -1.4483208656311035,
+        "z": -3.678196430206299
+      },
+      "max": {
+        "x": 0.22598884999752045,
+        "y": 1.4085571765899658,
+        "z": 3.651355266571045
+      }
+    },
+    {
+      "min": {
+        "x": -0.19366014003753662,
+        "y": -1.4482160806655884,
+        "z": -3.6775174140930176
+      },
+      "max": {
+        "x": 0.2383771538734436,
+        "y": 1.409279704093933,
+        "z": 3.65366792678833
+      }
+    },
+    {
+      "min": {
+        "x": -0.19366011023521423,
+        "y": -1.448021650314331,
+        "z": -3.666217803955078
+      },
+      "max": {
+        "x": 0.387416273355484,
+        "y": 1.4095420837402344,
+        "z": 3.6559672355651855
+      }
+    },
+    {
+      "min": {
+        "x": -0.19366008043289185,
+        "y": -1.4477479457855225,
+        "z": -3.6442031860351562
+      },
+      "max": {
+        "x": 0.5937945246696472,
+        "y": 1.4093868732452393,
+        "z": 3.658250331878662
+      }
+    },
+    {
+      "min": {
+        "x": -0.19366008043289185,
+        "y": -1.4473812580108643,
+        "z": -3.6117184162139893
+      },
+      "max": {
+        "x": 0.7976998090744019,
+        "y": 1.4089500904083252,
+        "z": 3.6608235836029053
+      }
+    },
+    {
+      "min": {
+        "x": -0.19366002082824707,
+        "y": -1.446900725364685,
+        "z": -3.570075273513794
+      },
+      "max": {
+        "x": 0.9943128824234009,
+        "y": 1.408082127571106,
+        "z": 3.6635262966156006
+      }
+    },
+    {
+      "min": {
+        "x": -0.19366002082824707,
+        "y": -1.4463123083114624,
+        "z": -3.5198135375976562
+      },
+      "max": {
+        "x": 1.1846648454666138,
+        "y": 1.4068084955215454,
+        "z": 3.666046142578125
+      }
+    },
+    {
+      "min": {
+        "x": -0.1936599612236023,
+        "y": -1.44565749168396,
+        "z": -3.463106393814087
+      },
+      "max": {
+        "x": 1.3640062808990479,
+        "y": 1.4051973819732666,
+        "z": 3.6683595180511475
+      }
+    },
+    {
+      "min": {
+        "x": -0.1936599612236023,
+        "y": -1.444959044456482,
+        "z": -3.401602268218994
+      },
+      "max": {
+        "x": 1.5313904285430908,
+        "y": 1.403311848640442,
+        "z": 3.6704115867614746
+      }
+    },
+    {
+      "min": {
+        "x": -0.1936599612236023,
+        "y": -1.4442291259765625,
+        "z": -3.3369808197021484
+      },
+      "max": {
+        "x": 1.6861457824707031,
+        "y": 1.401219367980957,
+        "z": 3.672273635864258
+      }
+    },
+    {
+      "min": {
+        "x": -0.19365990161895752,
+        "y": -1.4435019493103027,
+        "z": -3.2724831104278564
+      },
+      "max": {
+        "x": 1.8246325254440308,
+        "y": 1.3990404605865479,
+        "z": 3.6738898754119873
+      }
+    },
+    {
+      "min": {
+        "x": -0.19365990161895752,
+        "y": -1.4427858591079712,
+        "z": -3.2090773582458496
+      },
+      "max": {
+        "x": 1.948633074760437,
+        "y": 1.3968275785446167,
+        "z": 3.6752939224243164
+      }
+    },
+    {
+      "min": {
+        "x": -0.19365984201431274,
+        "y": -1.4421193599700928,
+        "z": -3.150146961212158
+      },
+      "max": {
+        "x": 2.0550484657287598,
+        "y": 1.3947155475616455,
+        "z": 3.676511764526367
+      }
+    },
+    {
+      "min": {
+        "x": -0.19365984201431274,
+        "y": -1.4415192604064941,
+        "z": -3.0975723266601562
+      },
+      "max": {
+        "x": 2.143874168395996,
+        "y": 1.392791748046875,
+        "z": 3.677431106567383
+      }
+    },
+    {
+      "min": {
+        "x": -0.19365978240966797,
+        "y": -1.4410117864608765,
+        "z": -3.053039789199829
+      },
+      "max": {
+        "x": 2.2151637077331543,
+        "y": 1.391135811805725,
+        "z": 3.678194761276245
+      }
+    },
+    {
+      "min": {
+        "x": -0.19365978240966797,
+        "y": -1.4406523704528809,
+        "z": -3.0199666023254395
+      },
+      "max": {
+        "x": 2.2659964561462402,
+        "y": 1.3898906707763672,
+        "z": 3.678734302520752
+      }
+    },
+    {
+      "min": {
+        "x": -0.19365978240966797,
+        "y": -1.4404489994049072,
+        "z": -2.998596668243408
+      },
+      "max": {
+        "x": 2.297945737838745,
+        "y": 1.3890795707702637,
+        "z": 3.679070472717285
+      }
+    },
+    {
+      "min": {
+        "x": -0.19365990161895752,
+        "y": -1.4403847455978394,
+        "z": -2.9909207820892334
+      },
+      "max": {
+        "x": 2.309241771697998,
+        "y": 1.3887873888015747,
+        "z": 3.679255723953247
+      }
+    },
+    {
+      "min": {
+        "x": -0.19365990161895752,
+        "y": -1.4404480457305908,
+        "z": -2.998465061187744
+      },
+      "max": {
+        "x": 2.298089027404785,
+        "y": 1.3890762329101562,
+        "z": 3.679100513458252
+      }
+    },
+    {
+      "min": {
+        "x": -0.19365990161895752,
+        "y": -1.4406507015228271,
+        "z": -3.0197179317474365
+      },
+      "max": {
+        "x": 2.266265869140625,
+        "y": 1.3898842334747314,
+        "z": 3.678790330886841
+      }
+    },
+    {
+      "min": {
+        "x": -0.19365990161895752,
+        "y": -1.4410091638565063,
+        "z": -3.0526750087738037
+      },
+      "max": {
+        "x": 2.215562343597412,
+        "y": 1.3911272287368774,
+        "z": 3.678258180618286
+      }
+    },
+    {
+      "min": {
+        "x": -0.19365990161895752,
+        "y": -1.4415160417556763,
+        "z": -3.0970988273620605
+      },
+      "max": {
+        "x": 2.1443982124328613,
+        "y": 1.3927809000015259,
+        "z": 3.677481174468994
+      }
+    },
+    {
+      "min": {
+        "x": -0.19365990161895752,
+        "y": -1.4421154260635376,
+        "z": -3.1496024131774902
+      },
+      "max": {
+        "x": 2.0556726455688477,
+        "y": 1.3947032690048218,
+        "z": 3.6765475273132324
+      }
+    },
+    {
+      "min": {
+        "x": -0.19365990161895752,
+        "y": -1.442781686782837,
+        "z": -3.2084875106811523
+      },
+      "max": {
+        "x": 1.9493743181228638,
+        "y": 1.3968143463134766,
+        "z": 3.6753177642822266
+      }
+    },
+    {
+      "min": {
+        "x": -0.19365990161895752,
+        "y": -1.4434973001480103,
+        "z": -3.2718849182128906
+      },
+      "max": {
+        "x": 1.825464129447937,
+        "y": 1.3990272283554077,
+        "z": 3.673903465270996
+      }
+    },
+    {
+      "min": {
+        "x": -0.1936599612236023,
+        "y": -1.4442248344421387,
+        "z": -3.3363795280456543
+      },
+      "max": {
+        "x": 1.687067985534668,
+        "y": 1.4012062549591064,
+        "z": 3.6722822189331055
+      }
+    },
+    {
+      "min": {
+        "x": -0.1936599612236023,
+        "y": -1.444954752922058,
+        "z": -3.4010019302368164
+      },
+      "max": {
+        "x": 1.532400369644165,
+        "y": 1.4032999277114868,
+        "z": 3.6704211235046387
+      }
+    },
+    {
+      "min": {
+        "x": -0.1936599612236023,
+        "y": -1.4456534385681152,
+        "z": -3.462545156478882
+      },
+      "max": {
+        "x": 1.3650736808776855,
+        "y": 1.405186653137207,
+        "z": 3.6683733463287354
+      }
+    },
+    {
+      "min": {
+        "x": -0.19366002082824707,
+        "y": -1.4463062286376953,
+        "z": -3.519322633743286
+      },
+      "max": {
+        "x": 1.1858073472976685,
+        "y": 1.4067997932434082,
+        "z": 3.6660611629486084
+      }
+    },
+    {
+      "min": {
+        "x": -0.19366002082824707,
+        "y": -1.4468942880630493,
+        "z": -3.569688320159912
+      },
+      "max": {
+        "x": 0.9954962730407715,
+        "y": 1.4080754518508911,
+        "z": 3.663541316986084
+      }
+    },
+    {
+      "min": {
+        "x": -0.19366005063056946,
+        "y": -1.4473849534988403,
+        "z": -3.6114394664764404
+      },
+      "max": {
+        "x": 0.7988933324813843,
+        "y": 1.408945918083191,
+        "z": 3.6608402729034424
+      }
+    },
+    {
+      "min": {
+        "x": -0.19366008043289185,
+        "y": -1.4477722644805908,
+        "z": -3.644038677215576
+      },
+      "max": {
+        "x": 0.5950263142585754,
+        "y": 1.4093856811523438,
+        "z": 3.658261775970459
+      }
+    },
+    {
+      "min": {
+        "x": -0.19366011023521423,
+        "y": -1.448067545890808,
+        "z": -3.6661720275878906
+      },
+      "max": {
+        "x": 0.3886467516422272,
+        "y": 1.409542441368103,
+        "z": 3.655980110168457
+      }
+    },
+    {
+      "min": {
+        "x": -0.19366014003753662,
+        "y": -1.4482908248901367,
+        "z": -3.6776020526885986
+      },
+      "max": {
+        "x": 0.23855653405189514,
+        "y": 1.4092826843261719,
+        "z": 3.653681993484497
+      }
+    },
+    {
+      "min": {
+        "x": -0.19366015493869781,
+        "y": -1.4484184980392456,
+        "z": -3.6784021854400635
+      },
+      "max": {
+        "x": 0.22603099048137665,
+        "y": 1.4085627794265747,
+        "z": 3.65136981010437
+      }
+    },
+    {
+      "min": {
+        "x": -0.23021472990512848,
+        "y": -1.4484485387802124,
+        "z": -3.6689882278442383
+      },
+      "max": {
+        "x": 0.21905918419361115,
+        "y": 1.4074188470840454,
+        "z": 3.649104118347168
+      }
+    },
+    {
+      "min": {
+        "x": -0.42649880051612854,
+        "y": -1.4483929872512817,
+        "z": -3.65004825592041
+      },
+      "max": {
+        "x": 0.21329906582832336,
+        "y": 1.405875325202942,
+        "z": 3.646902561187744
+      }
+    },
+    {
+      "min": {
+        "x": -0.6130290031433105,
+        "y": -1.4482547044754028,
+        "z": -3.622966766357422
+      },
+      "max": {
+        "x": 0.2096959948539734,
+        "y": 1.4040054082870483,
+        "z": 3.644712448120117
+      }
+    },
+    {
+      "min": {
+        "x": -0.7885690927505493,
+        "y": -1.4480628967285156,
+        "z": -3.5892016887664795
+      },
+      "max": {
+        "x": 0.20626133680343628,
+        "y": 1.4018747806549072,
+        "z": 3.6427338123321533
+      }
+    },
+    {
+      "min": {
+        "x": -0.9522008299827576,
+        "y": -1.4478193521499634,
+        "z": -3.5503132343292236
+      },
+      "max": {
+        "x": 0.2030126452445984,
+        "y": 1.3995503187179565,
+        "z": 3.640775442123413
+      }
+    },
+    {
+      "min": {
+        "x": -1.0997687578201294,
+        "y": -1.4475399255752563,
+        "z": -3.5089480876922607
+      },
+      "max": {
+        "x": 0.2000366449356079,
+        "y": 1.3971608877182007,
+        "z": 3.6389992237091064
+      }
+    },
+    {
+      "min": {
+        "x": -1.232867956161499,
+        "y": -1.4472390413284302,
+        "z": -3.4663429260253906
+      },
+      "max": {
+        "x": 0.19730770587921143,
+        "y": 1.3947561979293823,
+        "z": 3.6374025344848633
+      }
+    },
+    {
+      "min": {
+        "x": -1.3478763103485107,
+        "y": -1.4469377994537354,
+        "z": -3.4253289699554443
+      },
+      "max": {
+        "x": 0.19491183757781982,
+        "y": 1.392472505569458,
+        "z": 3.6358516216278076
+      }
+    },
+    {
+      "min": {
+        "x": -1.4444395303726196,
+        "y": -1.4466551542282104,
+        "z": -3.3877878189086914
+      },
+      "max": {
+        "x": 0.19369769096374512,
+        "y": 1.3903948068618774,
+        "z": 3.6347522735595703
+      }
+    },
+    {
+      "min": {
+        "x": -1.5223525762557983,
+        "y": -1.446404218673706,
+        "z": -3.3553619384765625
+      },
+      "max": {
+        "x": 0.19369769096374512,
+        "y": 1.3886082172393799,
+        "z": 3.6337099075317383
+      }
+    },
+    {
+      "min": {
+        "x": -1.5758709907531738,
+        "y": -1.4462101459503174,
+        "z": -3.3319430351257324
+      },
+      "max": {
+        "x": 0.19369757175445557,
+        "y": 1.3873252868652344,
+        "z": 3.6329922676086426
+      }
+    },
+    {
+      "min": {
+        "x": -1.602939248085022,
+        "y": -1.446093201637268,
+        "z": -3.3197269439697266
+      },
+      "max": {
+        "x": 0.19369757175445557,
+        "y": 1.3866609334945679,
+        "z": 3.632613182067871
+      }
+    },
+    {
+      "min": {
+        "x": -1.62567138671875,
+        "y": -1.4459887742996216,
+        "z": -3.309277296066284
+      },
+      "max": {
+        "x": 0.19369757175445557,
+        "y": 1.3860937356948853,
+        "z": 3.632251024246216
+      }
+    }
+  ],
+  "after": [
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/mackerel.meta",
+      "sha256": "a19315615c17a02171627997ee2591e4eff63458d307116ceb5e180f6a86ff40",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel-swim.controller",
+      "sha256": "9ffb1e8df7f9b58f335ee78fddf16b25a91a48574e1c09c50016f41057b300fd",
+      "bytes": 2048
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel-swim.controller.meta",
+      "sha256": "e903f70123c3a17d1a33cb7c69737ecd00dc25c9633c8ce2ddcc72c9981c2345",
+      "bytes": 188
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel-urp.mat",
+      "sha256": "a94324d9386c3fc7dd715fe6a01c2be58a25b2719231c1c0af942c0af52d2073",
+      "bytes": 3898
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel-urp.mat.meta",
+      "sha256": "4bca34c20a3bda7c86dbdee5e685abae2c5d28b41049075bdc29f5dfde8e4c01",
+      "bytes": 188
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel_basecolor_astc.asset",
+      "sha256": "2f5f19b696124d5dddb3c2f55570cdd93ce6023caca96c0ff152ef034ecdac7b",
+      "bytes": 1146007
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel_basecolor_astc.asset.meta",
+      "sha256": "47334475c89a7e9fb6e92ada5b366b90c0faf592b1df0ef23c7710b340b8437a",
+      "bytes": 188
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel_normal_lossless.asset",
+      "sha256": "6c213b6e3e206e637bd9535c5ccdb254015899c0a26dee81f9693c884a3cb82f",
+      "bytes": 4574465
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel_normal_lossless.asset.meta",
+      "sha256": "061525c55b5aa269c60163dd503835a2053ecb742f56b88d10ae18085b39c204",
+      "bytes": 188
+    },
+    {
+      "path": "Assets/ArtSources/MarineExpansion/mackerel.meta",
+      "sha256": "2c8be1d804539cf03662f76ae7709638da32ddc63b6bce401ab5b858d7830a41",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/ArtSources/MarineExpansion/mackerel/Mackerel_6_try4.fbx",
+      "sha256": "8b1c7668a55bb73c5d40aa3450d8b1374165a33addb315db820748610ec26126",
+      "bytes": 570188
+    },
+    {
+      "path": "Assets/ArtSources/MarineExpansion/mackerel/Mackerel_6_try4.fbx.meta",
+      "sha256": "0fdf784bbea8c53eb5f1c869115d800b91bb9de16c5328df2ab1c12407898b6e",
+      "bytes": 5326
+    },
+    {
+      "path": "Assets/ArtSources/MarineExpansion/mackerel/mackerel_sideview.png",
+      "sha256": "e14db4c944a1236130bddf88703227b398858e3d95c9e4b4741ca1adc4c25f91",
+      "bytes": 231948
+    },
+    {
+      "path": "Assets/ArtSources/MarineExpansion/mackerel/mackerel_sideview.png.meta",
+      "sha256": "c8c39978c8ac4aa381b0c6c9e5a0eede7a338ee272c6f5c811bf3157d8601a63",
+      "bytes": 3367
+    },
+    {
+      "path": "Assets/ArtSources/MarineExpansion/mackerel/mackerel_sideview_normal.png",
+      "sha256": "c29fcd1027fa095cfd890e26655cc54a7368105ea654ff87de56b475712e1d70",
+      "bytes": 215538
+    },
+    {
+      "path": "Assets/ArtSources/MarineExpansion/mackerel/mackerel_sideview_normal.png.meta",
+      "sha256": "3e3ad43da7b79d7623560f80bbf4860952d47eb6d2c1b738af324dc32ebfcad4",
+      "bytes": 3367
+    },
+    {
+      "path": "Assets/Resources/MarineExpansion/mackerel-geometry.json",
+      "sha256": "93520c45293b1feac978fe59120d3015186bfb9e740b15a016b39e2d92082d49",
+      "bytes": 423
+    },
+    {
+      "path": "Assets/Resources/MarineExpansion/mackerel-geometry.json.meta",
+      "sha256": "959088d409018a1714fd39c28a0240e8ed590669d66a4c90b1263099a2f6661a",
+      "bytes": 158
+    },
+    {
+      "path": "Assets/Resources/MarineExpansion/mackerel.prefab",
+      "sha256": "9745f300362822bdd4cfadbaf24ba49695274db99ca7d01f0e81bbcfb227acb1",
+      "bytes": 6412
+    },
+    {
+      "path": "Assets/Resources/MarineExpansion/mackerel.prefab.meta",
+      "sha256": "8c436107b55ce1d4bf709e99e9a72c0819a3c6bd3a959f3fa58cda5afb0ffe71",
+      "bytes": 154
+    }
+  ],
+  "clips": [
+    {
+      "name": "Armature|Mackerel_Death",
+      "length": 1.25,
+      "frameRate": 24.0,
+      "looping": false,
+      "selected": false,
+      "curves": 64
+    },
+    {
+      "name": "Armature|Mackerel_Idle",
+      "length": 2.5,
+      "frameRate": 24.0,
+      "looping": false,
+      "selected": false,
+      "curves": 36
+    },
+    {
+      "name": "Armature|Mackerel_Swim",
+      "length": 1.0,
+      "frameRate": 24.0,
+      "looping": true,
+      "selected": true,
+      "curves": 51
+    }
+  ],
+  "translations": [
+    {
+      "path": "Armature/Bone.012",
+      "property": "m_LocalPosition.x",
+      "range": 0.0,
+      "endpointDelta": 0.0,
+      "worldScale": 100.0,
+      "navigationRoot": false
+    },
+    {
+      "path": "Armature/Bone.012",
+      "property": "m_LocalPosition.y",
+      "range": 0.0,
+      "endpointDelta": 0.0,
+      "worldScale": 100.0,
+      "navigationRoot": false
+    },
+    {
+      "path": "Armature/Bone.012",
+      "property": "m_LocalPosition.z",
+      "range": 0.039990611374378204,
+      "endpointDelta": 1.889020495582372e-06,
+      "worldScale": 100.0,
+      "navigationRoot": false
+    }
+  ],
+  "rotations": [
+    {
+      "path": "Armature/Bone",
+      "loopAngle": 0.0
+    },
+    {
+      "path": "Armature/Bone/Bone.001",
+      "loopAngle": 0.0
+    },
+    {
+      "path": "Armature/Bone/Bone.001/Bone.002",
+      "loopAngle": 0.0
+    },
+    {
+      "path": "Armature/Bone/Bone.001/Bone.002/Bone.003",
+      "loopAngle": 0.0
+    },
+    {
+      "path": "Armature/Bone/Bone.001/Bone.002/Bone.003/Bone.004",
+      "loopAngle": 0.0
+    },
+    {
+      "path": "Armature/Bone/Bone.001/Bone.002/Bone.003/Bone.004/Bone.005",
+      "loopAngle": 0.0
+    },
+    {
+      "path": "Armature/Bone/Bone.001/Bone.002/Bone.003/Bone.004/Bone.006",
+      "loopAngle": 0.0
+    },
+    {
+      "path": "Armature/Bone/Bone.001/Bone.002/Bone.007",
+      "loopAngle": 0.0
+    },
+    {
+      "path": "Armature/Bone/Bone.001/Bone.002/Bone.008",
+      "loopAngle": 0.0
+    },
+    {
+      "path": "Armature/Bone/Bone.001/Bone.010",
+      "loopAngle": 0.0
+    },
+    {
+      "path": "Armature/Bone/Bone.001/Bone.010/Bone.011",
+      "loopAngle": 0.0
+    },
+    {
+      "path": "Armature/Bone/Bone.009",
+      "loopAngle": 0.0
+    },
+    {
+      "path": "Armature/Bone/Bone.009/Bone.015",
+      "loopAngle": 0.0
+    },
+    {
+      "path": "Armature/Bone.012",
+      "loopAngle": 0.1978234350681305
+    },
+    {
+      "path": "Armature/Bone.013",
+      "loopAngle": 0.0
+    },
+    {
+      "path": "Armature/Bone.013/Bone.014",
+      "loopAngle": 0.0
+    }
+  ],
+  "textures": [
+    {
+      "source": "Assets/ArtSources/MarineExpansion/mackerel/mackerel_sideview.png",
+      "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel_basecolor_astc.asset",
+      "sourceSha256": "e14db4c944a1236130bddf88703227b398858e3d95c9e4b4741ca1adc4c25f91",
+      "type": "NativeTexture2D",
+      "format": "ASTC_4x4",
+      "graphicsFormat": "RGBA_ASTC4X4_SRGB",
+      "normalPacking": "Original sRGB RGB retained; derived alpha255 for verified opaque URP Lit (no clip or albedo-alpha smoothness); source PNG unchanged. 2 edge rows padded, UV y scaled534/536; no resample",
+      "srgb": true,
+      "androidOverride": false,
+      "mipmaps": true,
+      "opaqueAlpha": true,
+      "width": 800,
+      "height": 536,
+      "sourceWidth": 800,
+      "sourceHeight": 534,
+      "mips": 10,
+      "copyMaximumError": 0,
+      "maximumRgbError": 17,
+      "maximumAlphaError": 0,
+      "runtimeBytes": 572480,
+      "expectedPayloadBytes": 572480,
+      "meanByteError": 0.17266568359405748,
+      "rmsByteError": 0.6254835432719653
+    },
+    {
+      "source": "Assets/ArtSources/MarineExpansion/mackerel/mackerel_sideview_normal.png",
+      "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel_normal_lossless.asset",
+      "sourceSha256": "c29fcd1027fa095cfd890e26655cc54a7368105ea654ff87de56b475712e1d70",
+      "type": "NativeTexture2D",
+      "format": "RGBA32",
+      "graphicsFormat": "R8G8B8A8_UNorm",
+      "normalPacking": "Lossless RGBA32=(1,Y,0,X), all mips/nonreadable; original normal XY retained exactly (copy/decode error<=1); URP AG and RGorAG decode identical; Android NormalMapEncoding.DXT5nm required",
+      "srgb": false,
+      "androidOverride": false,
+      "mipmaps": true,
+      "opaqueAlpha": false,
+      "width": 800,
+      "height": 536,
+      "sourceWidth": 800,
+      "sourceHeight": 534,
+      "mips": 10,
+      "copyMaximumError": 0,
+      "maximumRgbError": 0,
+      "maximumAlphaError": 0,
+      "runtimeBytes": 2286708,
+      "expectedPayloadBytes": 2286708,
+      "meanByteError": 0.0,
+      "rmsByteError": 0.0
+    }
+  ],
+  "publicationProjection": true,
+  "sourceReportSha256": "04354d82616c5200a25b3f02a91f7130547804dec778a760b9c1fdf8c5b04172",
+  "publicationScope": "Public projection of the existing completed source admission. Preserves original output hashes, measured poses, model, texture and animation gates. Download archives, local paths and protected-workspace evidence are omitted. This is not new sampling, new source-archive verification or headset acceptance."
+}

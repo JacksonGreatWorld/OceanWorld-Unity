@@ -57,6 +57,9 @@ Shader "SwanUnderwater/FishSwim"
             #pragma multi_compile_instancing
             // Materials are created at runtime, so keep both local variants in player builds.
             #pragma multi_compile_local _ _SCHOOL_SIMPLE
+            #pragma multi_compile_local_fragment _ _FISH_RECEIVE_SHADOWS
+            #pragma multi_compile_fragment _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
+            #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -184,15 +187,32 @@ Shader "SwanUnderwater/FishSwim"
                 N = normalize(mul(tangentNormal, half3x3(i.tangentWS, i.bitangentWS, i.normalWS)));
                 #endif
 
-                // Main directional light
+                // Only the separate hero/task material opts into a real reef shadow.
+                // The instanced school variant removes this sampling path at compile time,
+                // including when it inherits a mistakenly enabled material keyword.
+                #if defined(_FISH_RECEIVE_SHADOWS) && !defined(_SCHOOL_SIMPLE)
+                #if defined(_MAIN_LIGHT_SHADOWS_SCREEN)
+                float4 shadowCoord = ComputeScreenPos(TransformWorldToHClip(i.positionWS));
+                #else
+                float4 shadowCoord = TransformWorldToShadowCoord(i.positionWS);
+                #endif
+                Light mainLight = GetMainLight(shadowCoord, i.positionWS, half4(1, 1, 1, 1));
+                #else
                 Light mainLight = GetMainLight();
+                #endif
                 half NdotL = saturate(dot(N, mainLight.direction));
 
-                // URP spherical-harmonics ambient, boosted for underwater.
-                // A hemispheric fill keeps down-facing / side-facing fish readable
-                // instead of going nearly black in the dim underwater ambient.
+                #if defined(_FISH_RECEIVE_SHADOWS) && !defined(_SCHOOL_SIMPLE)
+                // Follow the scene's actual sky/ground illumination. A small water
+                // bounce retains a readable silhouette without the former bright blue
+                // floor that made a fish in a reef crevice look self illuminated.
+                half3 ambient = max(SampleSH(N), 0.0h) +
+                    half3(0.018h, 0.030h, 0.035h) * (0.65h + 0.35h * saturate(N.y));
+                #else
+                // Keep the distant school/fallback material's existing inexpensive look.
                 half3 ambient = SampleSH(N) + half3(0.10, 0.16, 0.18) * (0.5 + 0.5 * saturate(N.y));
                 ambient = max(ambient, half3(0.09, 0.13, 0.15));
+                #endif
 
                 // Metallic / roughness from glTF-packed texture (B=metallic, G=roughness)
                 // SchoolFish contains this map: keep its actual channels and the existing black
@@ -224,7 +244,14 @@ Shader "SwanUnderwater/FishSwim"
                 occlusion = lerp(1.0, occlusion, _OcclusionStrength);
                 #endif
 
+                #if defined(_FISH_RECEIVE_SHADOWS) && !defined(_SCHOOL_SIMPLE)
+                // Material AO belongs to indirect light. The real reef/cascade shadow
+                // attenuates direct diffuse and specular together, including distance fade.
+                half3 lit = (diffuse + specular) * mainLight.color *
+                    (mainLight.distanceAttenuation * mainLight.shadowAttenuation) + albedo.rgb * ambient * occlusion;
+                #else
                 half3 lit = (diffuse * mainLight.color + specular * mainLight.color) * occlusion + albedo.rgb * ambient * occlusion;
+                #endif
 
                 // Emission
                 #if !defined(_SCHOOL_SIMPLE)

@@ -30,6 +30,7 @@ namespace SwanUnderwater
             internal Text sharkText;
             internal Canvas sharkCanvas;
             internal int shownHits = -1;
+            internal OceanLanguageChoice shownLanguage = (OceanLanguageChoice)(-1);
             public bool IsAmbient { get; internal set; }
             public GameObject Visual { get; internal set; }
             public CapsuleCollider Body { get; internal set; }
@@ -43,6 +44,7 @@ namespace SwanUnderwater
             internal bool originalActive;
             internal float clearanceRadius;
             internal float fleeRemaining, fleeCooldown;
+            internal float swimSpeed = .18f;
             internal Vector3 fleeTarget;
         }
 
@@ -77,6 +79,15 @@ namespace SwanUnderwater
             foreach (var target in targets) if (target.IsShark && target.SharkId == identity) return target.SharkLabel;
             return "鲨鱼 " + (identity + 1);
         }
+
+        public static string LocalizeSharkDisplayName(string source)
+        {
+            int split=source.LastIndexOf(' ');
+            if(split<0||!int.TryParse(source.Substring(split+1),out int ordinal))return OceanLanguage.Text(source);
+            return OceanLanguage.Format("{0} {1}",OceanLanguage.Text(source.Substring(0,split)),ordinal);
+        }
+        static string SharkLabelForDisplay(CreatureTarget target)
+            => LocalizeSharkDisplayName(target.SharkLabel);
 
         public void Initialize(UnderwaterWorld owner, Camera camera, HandSwimController controller,
             OceanCampaignState campaign, Action<string, int> eventCallback)
@@ -134,13 +145,18 @@ namespace SwanUnderwater
                     if (handDistance < threatDistance) { threat = palm; threatDistance = handDistance; }
                 }
                 if (state.Current.level > 5 && TickFishFlee(target, threat, threatDistance, dt)) continue;
-                if (close) continue; // The cooldown is a real stationary opportunity to reach and grasp.
                 float speed = state.Current.level > 5 ? state.Definition.FishSpeed : 1f;
-                float phase = target.phase + dt * .32f * speed;
+                // Keep the earned grasp window, but brake into it rather than freezing
+                // on the first frame across a distance threshold. This small coast is
+                // nose-first and still passes the original water/reef segment gate.
+                target.swimSpeed = Mathf.MoveTowards(target.swimSpeed, close ? 0f : .18f * speed,
+                    dt * (close ? .65f : .26f));
+                if (target.swimSpeed <= .00001f) continue;
+                float phase = target.phase + dt * .32f * speed * (target.swimSpeed / (.18f * speed));
                 Vector3 desired = target.anchor + FishOrbit(phase);
                 Vector3 toward = desired - target.root.position;
                 Vector3 next = OceanFishSteering.Advance(target.root.position, target.root.rotation,
-                    toward.normalized * (.18f * speed), dt, 65f, target.Species == 5,
+                    toward.normalized * target.swimSpeed, dt, 65f, target.Species == 5,
                     out Quaternion heading, toward.magnitude);
                 // Clearance gates translation, not the animal's ability to finish its turn.
                 // Otherwise an old nose pointing at a reef repeatedly rejects the same step.
@@ -176,8 +192,9 @@ namespace SwanUnderwater
             if (!target.IsFleeing) return false;
             Vector3 from = target.root.position;
             float speed = Mathf.Min(.80f, .58f * state.Definition.FishSpeed);
+            target.swimSpeed = Mathf.MoveTowards(target.swimSpeed, speed * Mathf.Clamp01(target.fleeRemaining / .24f), dt * 3f);
             Vector3 toward = target.fleeTarget - from;
-            Vector3 next = OceanFishSteering.Advance(from, target.root.rotation, toward.normalized * speed,
+            Vector3 next = OceanFishSteering.Advance(from, target.root.rotation, toward.normalized * target.swimSpeed,
                 dt, 140f, target.Species == 5, out Quaternion heading, toward.magnitude);
             target.root.rotation = heading;
             bool clear = CreatureSegmentClear(from, next, target.clearanceRadius, true);
@@ -189,6 +206,7 @@ namespace SwanUnderwater
             if (!clear || target.fleeRemaining <= 0f || Vector3.Distance(next, target.fleeTarget) < .03f)
             {
                 target.fleeRemaining = 0f;
+                target.swimSpeed = 0f; // End-of-response contact remains an exact catch opportunity.
                 target.fleeCooldown = 4f + target.Species * (2f / 9f);
                 target.anchor = target.root.position - FishOrbit(target.phase);
             }
@@ -442,10 +460,13 @@ namespace SwanUnderwater
             target.sharkMotion.Tick(dt, view.transform.position, aiming, ray, ready);
             target.sharkVisualMotion.Tick(dt);
             int hits = state.SharkHitsFor(target.SharkId);
-            if (target.shownHits != hits)
+            if (target.shownHits != hits || target.shownLanguage != OceanLanguage.Resolved)
             {
                 target.shownHits = hits;
-                target.sharkText.text = target.SharkLabel + "  " + hits + "/" + state.SharkHitTarget + (ready ? " · 握拳抓取" : "");
+                target.shownLanguage=OceanLanguage.Resolved;
+                target.sharkText.fontSize=OceanLanguage.IsEnglish?22:24;
+                ((RectTransform)target.sharkCanvas.transform).sizeDelta=new Vector2(320f,OceanLanguage.IsEnglish?72f:64f);
+                target.sharkText.text = OceanLanguage.Format("{0}  {1}/{2}{3}",SharkLabelForDisplay(target),hits,state.SharkHitTarget,ready?OceanLanguage.Text(" · 握拳抓取"):"");
             }
             target.sharkCanvas.enabled = (aiming || hits > 0) && Vector3.Distance(view.transform.position, target.root.position) < 20f;
             if (target.sharkCanvas.enabled)

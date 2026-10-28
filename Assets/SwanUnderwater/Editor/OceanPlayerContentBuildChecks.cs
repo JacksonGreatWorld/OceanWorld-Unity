@@ -68,8 +68,10 @@ namespace SwanUnderwater.EditorTests
             string path = ProjectPath(ManifestPath);
             Check(File.Exists(path), "missing shared first-20 content profile");
             var profile = JsonUtility.FromJson<ContentProfile>(File.ReadAllText(path));
-            Check(profile != null && profile.version == 1 && profile.rows != null && profile.rows.Length == 12,
-                "expected version 1 with twelve historical source-only mappings");
+            Check(profile != null && profile.version == 2 && profile.rows != null && profile.rows.Length == 13,
+                "expected version 2 with thirteen historical source-only mappings");
+            Check(!OceanReleaseFeatures.LeaderboardsEnabled,
+                "this font-excluding profile is valid only while leaderboards remain disabled");
             Check(profile.sourceArchivePolicy == "required" || profile.sourceArchivePolicy == "provenance-only",
                 "sourceArchivePolicy must explicitly require archives or declare omitted public provenance");
             Check(profile.playableLevelCount == 20 && profile.legacyCatalogCount == 100 && profile.availableObservationCount == 30,
@@ -134,9 +136,11 @@ namespace SwanUnderwater.EditorTests
                     omittedArchives++;
                 }
                 Check(Resources.Load<UnityEngine.Object>(ResourceKey(row.original)) == null,
-                    "excluded model is still loadable through Resources: " + row.original);
+                    "excluded asset is still loadable through Resources: " + row.original);
                 sourceBytes += row.sourceBytes; metaBytes += row.metaBytes;
             }
+            Check(originals.Contains("Assets/Resources/Leaderboard/LeaderboardFont.otf"),
+                "the disabled leaderboard font must be an explicit preserved exclusion");
             Check(sourceBytes == profile.excludedSourceBytes && metaBytes == profile.excludedMetaBytes,
                 "historical source-byte accounting agrees with the manifest; omitted archives are not verified or shipped; this is not an APK saving claim");
             RunPackedPolicyRegression(originals);

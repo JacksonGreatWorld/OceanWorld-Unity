@@ -38,19 +38,30 @@ ROOT_TEXT_NAMES = {".gitignore", ".gitattributes", ".editorconfig"}
 ROOT_DOC = re.compile(r"^(?:readme(?:[._-].*)?|licen[cs]e(?:[._-].*)?|notice(?:[._-].*)?|third[_-]party.*|asset[_-]sources.*)$", re.I)
 LICENSE_DOC = re.compile(r"(?:licen[cs]e|notice|credit|third[_-]?party|asset[_-]?source|attribution|ofl|copying)", re.I)
 APPROVED_PUBLIC_DOCS = {
-    "docs/ASSETS.md", "docs/DEPENDENCIES.md", "docs/VALIDATION.md", "docs/LEADERBOARD.md", "Sources/README.md",
+    "docs/ASSETS.md", "docs/DEPENDENCIES.md", "docs/VALIDATION.md", "docs/LEADERBOARD.md", "docs/RELEASE_2.9.20.md", "docs/media-manifest.json", "Sources/README.md",
     "Sources/DiverHands/SOURCE.md", "Sources/DiverHands/UNITY-XR-HANDS-LICENSE.md",
     "Sources/MarineExpansion/COMPANIONS.md", "Sources/MarineExpansion/SOURCE.md",
     "Sources/MarketReef/SOURCE.md", "Sources/SchoolFish/README.md",
 }
-# These reviewed images are owned artwork or historical Editor captures.
-# Approving a path alone must not allow a private evidence image to replace it.
+# These reviewed media files are owned artwork or labeled historical captures.
+# Approving a path alone must not allow private evidence to replace them.
 APPROVED_PUBLIC_IMAGES = {
+    "docs/images/ocean-world-poster.jpg": "85f6ac1ef89c2f8dc67a60ec1cf92a843956ad03db4374d1d2f5816e8be0c07f",
+    "docs/images/gameplay-preview.gif": "9376db111fe174de33a053ee4b64352497351c9cd29ff7bb1ab6e2ef35afafca",
+    "docs/videos/oceanworld-gameplay-720p.mp4": "40c3d6a99d87d65895fed825c38d9c0b5d3acc80c3e170f1370ffc36ea832a58",
     "docs/images/coral-sanctuary-v2.9.8.png": "d3567316cb105ac53dbcc89dc489d30e8d84840150896cb7a29a06a4d84d6cda",
     "docs/images/coral-scale-v2.8.5.png": "f16c1ce3bea02327c3bcefaa33d9f658bb68690119179284c3223e2b3d4b3d4f",
     "docs/images/marine-turtle-v2.8.9.png": "66c45b871ab53fc7c85f5e5d63a03e4b39a4eb40be96e4d1c1f7b61302cb2321",
     "docs/images/ocean-world.png": "af012628286e6fa36a12a5d089fa1669f3f27239137a4fb028e3b41e8032daa9",
     "docs/images/shell-collection.png": "ba45502f661c12b3e09bad4f189c0c3c94660fd0a5e0d3f73b1e6fc3234731fb",
+}
+# Preserve the already-published privacy text exactly; legal edits need separate review.
+APPROVED_IMMUTABLE_DOCS = {
+    # Sealed public projections preserve admitted output hashes and animation/texture measurements.
+    'Sources/MarineExpansion/mackerel-native-admission.json': 'd7fa3e40d04a99bd2d50f84a76038ba01d5a6487b52c65e4a60e8d089a3c239d',
+    'Sources/MarineExpansion/butterfly-native-admission.json': '1616ff7de82d699a5ae6525a010237012b468b58ec1f4bd98bafdb21f16627a9',
+    'Sources/MarineExpansion/marine-companions-native-admission.json': '45ff7c2823f3789a922f7a0281348911cc6a06f8cca46411cacf5fce68c1cb29',
+    "docs/privacy/index.html": "03b4a066096ab78afb3b161727f3636809f7ffb64b95acfbdbbfd969a0fe97c9",
 }
 FORBIDDEN_SEGMENTS = {
     "spatial", "server", "servers", "validation", "releases", "builds", "library",
@@ -115,7 +126,7 @@ def allowed_path(relative: str) -> bool:
         return True
     if relative == "Packages/manifest.json":
         return True
-    if relative in APPROVED_PUBLIC_DOCS or relative in APPROVED_PUBLIC_IMAGES:
+    if relative in APPROVED_PUBLIC_DOCS or relative in APPROVED_PUBLIC_IMAGES or relative in APPROVED_IMMUTABLE_DOCS:
         return True
     if parts[0] == "docs":
         return bool(LICENSE_DOC.search(relative)) and Path(relative).suffix.lower() in {".md", ".txt", ".json", ".csv"}
@@ -240,13 +251,14 @@ class PublicReleaseCheck:
             original = file.stat()
             with file.open("rb") as stream:
                 prefix = stream.read(4096)
-                if relative in APPROVED_PUBLIC_IMAGES:
+                if relative in APPROVED_PUBLIC_IMAGES or relative in APPROVED_IMMUTABLE_DOCS:
                     stream.seek(0)
                     digest = hashlib.sha256()
                     while block := stream.read(CHUNK_BYTES):
                         digest.update(block)
-                    if digest.hexdigest() != APPROVED_PUBLIC_IMAGES[relative]:
-                        self.add(relative, 1, "image.not_the_reviewed_public_image")
+                    expected_digest = (APPROVED_PUBLIC_IMAGES.get(relative) or APPROVED_IMMUTABLE_DOCS[relative])
+                    if digest.hexdigest() != expected_digest:
+                        self.add(relative, 1, "content.not_the_reviewed_public_file")
                 if prefix.lstrip(b"\xef\xbb\xbf").startswith(LFS_HEADER):
                     self.stats["lfsPointers"] += 1
                     self.add(relative, 1, "lfs.unresolved_source_pointer")

@@ -61,7 +61,8 @@ namespace SwanUnderwater
             for(int i=0;i<2;i++)
             {
                 bool tracked=i==0?leftTracked:rightTracked,open=i==0?leftOpen:rightOpen;
-                statuses[i].text=(i==0?"左手：":"右手：")+(tracked?(open?"已追踪 · 张开":"已追踪 · 请张手"):"未追踪 · 请伸手");
+                statuses[i].text=OceanLanguage.Format("{0}：{1}",OceanLanguage.Text(i==0?"左手":"右手"),
+                    OceanLanguage.Text(tracked?(open?"已追踪 · 张开":"已追踪 · 请张手"):"未追踪 · 请伸手"));
                 statuses[i].color=tracked?Tracked:Missing;
                 float x=i==0?-145:145;
                 // This moves only an explicitly labelled icon, never a sampled palm or the XR Origin.
@@ -69,9 +70,9 @@ namespace SwanUnderwater
                 Color tint=swim?Color.Lerp(Ghost,new Color(.34f,.54f,.63f),demo.Recovering?.45f:0f):tracked?Tracked:Missing;
                 foreach(var image in fingers[i])image.color=tint;
             }
-            demonstration.text=swim?"慢动作示意 · 图中的手不是实时追踪":"左右手追踪状态 · 至少一只手张开";
-            instruction.text=swim?(demo.Holding?"停手，等待减速；示意动画不会完成教学":demo.Recovering?"轻松把手送回前方，再向身后划水":"双手缓慢向身后划水，不必快速挥动"):
-                current==OceanInteractiveTutorialRules.Step.PracticeGrab?"靠近练习扇贝，先张开手，再握拳":current==OceanInteractiveTutorialRules.Step.Menu?"打开金色菜单，查看目标，再收起":"请把手放到头显能看见的范围内";
+            demonstration.text=OceanLanguage.Text(swim?"慢动作示意 · 图中的手不是实时追踪":"左右手追踪状态 · 至少一只手张开");
+            instruction.text=OceanLanguage.Text(swim?(demo.Holding?"停手，等待减速；示意动画不会完成教学":demo.Recovering?"轻松把手送回前方，再向身后划水":"双手缓慢向身后划水，不必快速挥动"):
+                current==OceanInteractiveTutorialRules.Step.PracticeGrab?"靠近练习扇贝，先张开手，再握拳":current==OceanInteractiveTutorialRules.Step.Menu?"打开金色菜单，查看目标，再收起":"请把手放到头显能看见的范围内");
         }
         public void SetVisible(bool value)
         { visible=value; if(root!=null)root.SetActive(value); }
@@ -90,7 +91,7 @@ namespace SwanUnderwater
         Text Label(Transform parent,Font font,string name,string value,Vector2 position,Vector2 size,int pixels)
         {
             var go=new GameObject(name,typeof(RectTransform),typeof(Text));go.transform.SetParent(parent,false);
-            var text=go.GetComponent<Text>();text.font=font;text.fontSize=pixels;text.material=material;text.text=value;text.color=Color.white;
+            var text=go.GetComponent<Text>();text.font=font;text.fontSize=pixels;text.material=material;OceanLanguage.Bind(text,value);text.color=Color.white;
             text.raycastTarget=false;text.alignment=TextAnchor.MiddleCenter;text.supportRichText=false;
             text.horizontalOverflow=HorizontalWrapMode.Wrap;text.verticalOverflow=VerticalWrapMode.Truncate;
             text.rectTransform.anchoredPosition=position;text.rectTransform.sizeDelta=size;return text;

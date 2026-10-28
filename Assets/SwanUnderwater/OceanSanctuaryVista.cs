@@ -92,7 +92,10 @@ namespace SwanUnderwater
             root.SetPositionAndRotation(Vector3.zero, Quaternion.identity);
             root.localScale = Vector3.one;
             var materials = new Material[3];
-            float[] visibility = { .46f, .34f, .25f };
+            // The close-reef fog is intentionally dense, but the inaccessible relief
+            // must still leave a readable silhouette from the OUTER swim route. The
+            // old .46/.34/.25 with .0065+ extinction erased nearly all three layers.
+            float[] visibility = { .82f, .66f, .50f };
             for (int i = 0; i < materials.Length; i++)
             {
                 var material = new Material(shader)
@@ -101,7 +104,7 @@ namespace SwanUnderwater
                     enableInstancing = true
                 };
                 material.SetFloat("_Visibility", visibility[i]);
-                material.SetFloat("_Density", .0065f + i * .0007f);
+                material.SetFloat("_Density", .0025f + i * .0006f);
                 materials[i] = material;
                 resources.Own(material);
             }
@@ -183,8 +186,30 @@ namespace SwanUnderwater
                 // Broad eroded shoulders and an asymmetric crest replace cone-shaped
                 // mountain primitives. Each section has its own non-repeating outline.
                 float shoulder = 1f - Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.43f, 1f, r));
+                // Four distinct geological sections use the existing footprint and
+                // vertex budget: broken ridge, split bank, leaning spur and broad shelf.
+                // The silhouette changes in real geometry, preserving stereo parallax.
                 float crest = .75f + .16f * Mathf.Sin(u * 3.8f + seed)
                     + .09f * Mathf.Cos(u * 7.1f - v * 2.7f + seed * .73f);
+                switch(index%4)
+                {
+                    case 0:
+                        crest*=.38f+.62f*Mathf.Exp(-Mathf.Pow((v+.16f*Mathf.Sin(u*4f+seed))*2.3f,2));
+                        break;
+                    case 1:
+                        float saddle=1f-.56f*Mathf.Exp(-Mathf.Pow((u-.14f-v*.18f)*5f,2));
+                        crest*=saddle;
+                        break;
+                    case 2:
+                        float spine=Mathf.Exp(-Mathf.Pow((u+.18f-v*.35f)*2.4f,2));
+                        crest*=.24f+.76f*spine*(.48f+.52f*Mathf.SmoothStep(0f,1f,
+                            Mathf.InverseLerp(-.7f,.35f,v)));
+                        break;
+                    default:
+                        float shelf=.56f+.44f*Mathf.SmoothStep(0f,1f,Mathf.InverseLerp(-.4f,.2f,u+v*.23f));
+                        crest*=shelf;
+                        break;
+                }
                 float erosion = .94f + .06f * Mathf.Sin(u * 19f + v * 13f + seed);
                 float h = formation.height * shoulder * crest * erosion;
                 // The skirt is below the rendered ground, not hovering over a flat

@@ -12,7 +12,7 @@ namespace SwanUnderwater
     [DefaultExecutionOrder(95)]
     public sealed partial class OceanCampaignPanel : MonoBehaviour
     {
-        enum Page { Menu, Levels, Targets, ShellsOne, ShellsTwo, Marine, MarineTwo, Sharks, Confirm, Result, CollectionHub, Naturalist, Comfort, ComfortAudio, SaveRecovery, Achievements }
+        enum Page { Menu, Levels, Targets, ShellsOne, ShellsTwo, Marine, MarineTwo, Sharks, Confirm, Result, CollectionHub, Naturalist, Comfort, ComfortAudio, SaveRecovery, Achievements, Language }
         sealed class Target
         {
             public string id;
@@ -25,6 +25,8 @@ namespace SwanUnderwater
             public OceanMenuOrnament border;
             public float hover;
             public bool hovered;
+            public Vector3 pointerPoint;
+            public int pointerFrame = -1;
         }
         sealed class HandInput
         {
@@ -86,7 +88,7 @@ namespace SwanUnderwater
         Text goalPageLabel;
         int goalCount, goalPage, boundGoalLevel = -1, boundGoalPage = -1;
         Page page, confirmReturn;
-        string confirmAction, unavailableLevelNotice;
+        string confirmAction, unavailableLevelNotice, confirmTitleSource, confirmDetailsSource;
         int confirmLevel;
         bool initialized, available, disposed;
         int activatedFrame = -1;
@@ -97,6 +99,7 @@ namespace SwanUnderwater
         Quaternion expandedRotation;
         CanvasGroup panelGroup;
         OceanMenuOrnament panelBorder;
+        OceanMenuClickFeedback clickFeedback;
         Target touchBar;
         double worldInputUntil;
         public bool IsOpen { get; private set; }
@@ -135,23 +138,26 @@ namespace SwanUnderwater
             Label(panelRoot.transform, "Explicit controls", OceanXRPlatform.IsVisionOS ? "看向选项捏合选择 · 靠近物体后捏合抓取（也可握拳）" : "射线指向后捏合选择", 18,
                 new Vector2(0, -279), new Vector2(700, 34)).color = Muted;
             back = Button(panelRoot.transform, "back", "返回", new Vector2(-312, 240), new Vector2(92, 50), Back);
-            close = Button(panelRoot.transform, "close", "收起", new Vector2(312, 240), new Vector2(92, 50), () => Dispatch("resume", 0));
-            BuildMenu(); BuildLevels(); BuildCollections(); BuildCollectionHub(); BuildNaturalist(); BuildAchievements(); BuildTargets(); BuildConfirm(); BuildResult(); BuildHud(); BuildComfort(); BuildSaveRecovery();
+            close = Button(panelRoot.transform, "close", "收起", new Vector2(312, 240), new Vector2(92, 50), CloseHeader);
+            BuildMenu(); BuildLevels(); BuildCollections(); BuildCollectionHub(); BuildNaturalist(); BuildAchievements(); BuildTargets(); BuildConfirm(); BuildResult(); BuildHud(); BuildComfort(); BuildSaveRecovery(); BuildTutorialExit();
             leftHand.ray = BuildRay("Left hand menu ray");
             rightHand.ray = BuildRay("Right hand menu ray");
             leftHand.cursor = BuildCursor("Left hand menu cursor");
             rightHand.cursor = BuildCursor("Right hand menu cursor");
             leftController.ray = BuildRay("Left menu controller ray");
             rightController.ray = BuildRay("Right menu controller ray");
+            BuildClickFeedback();
             initialized = true;
             tutorial = gameObject.AddComponent<OceanInteractiveTutorial>();
             tutorial.Initialize(view, hands, this, RefreshTutorialPresentation);
             ShowPage(Page.Menu); Refresh();
             panelRoot.SetActive(false); hudRoot.SetActive(false);
+            OceanLanguage.Changed += RefreshLanguage;
         }
 
         public void SetAvailable(bool value)
         {
+            if (!value) { if(clickFeedback!=null)clickFeedback.Cancel(); SetTutorialExitVisible(false); }
             if (available == value) return;
             available = value;
             if (!initialized) return;
@@ -159,6 +165,7 @@ namespace SwanUnderwater
             if (available && IsOpen) AnchorPanel();
             panelRoot.SetActive(available && (IsOpen || IsTransitioning));
             hudRoot.SetActive(available && !IsOpen && !IsTransitioning);
+            RefreshTutorialExitPresentation();
             ResetInput();
         }
 
@@ -171,6 +178,7 @@ namespace SwanUnderwater
             hands.SetMenuLocomotionPaused(true);
             AnchorPanel(); ShowPage(Page.Menu); Refresh();
             panelRoot.SetActive(available); hudRoot.SetActive(false); ResetInput();
+            RefreshTutorialExitPresentation();
             ApplyExpansionPose();
             if (!wasOpen || previousPage != page) LogMenuState("open");
         }
@@ -183,6 +191,7 @@ namespace SwanUnderwater
             tutorial?.NotifyResumed();
             panelRoot.SetActive(available && IsTransitioning); hudRoot.SetActive(available && !IsTransitioning);
             hands.SetMenuLocomotionPaused(false); ResetInput();
+            RefreshTutorialExitPresentation();
             if (wasOpen) LogMenuState("close");
         }
 
@@ -210,7 +219,7 @@ namespace SwanUnderwater
             bool openRun = run != null && OceanCampaignAvailability.IsOpen(run.level);
             if (page == Page.Targets && run != null && !openRun) { ShowUnavailableLevel(run.level); return; }
             RefreshHud();
-            string performanceLabel = "性能面板：" + (PerformanceHud.PreferenceVisible ? "开" : "关");
+            string performanceLabel = F("性能面板：{0}", L(PerformanceHud.PreferenceVisible ? "开" : "关"));
             performanceToggle.label.text = performanceLabel;
             menuPerformanceToggle.label.text = performanceLabel;
             RefreshComfort();
@@ -219,7 +228,7 @@ namespace SwanUnderwater
             for (int i = 0; i < SpeciesCount; i++)
             {
                 bool collected = i < ShellCount ? (state.Save.shellMask & (1 << i)) != 0 : i < SharkIndex ? (state.Save.fishMask & (1 << (i - FishOffset))) != 0 : state.Save.shark;
-                collectionStatuses[i].text = collected ? "已收藏" : "未收集";
+                collectionStatuses[i].text = L(collected ? "已收藏" : "未收集");
                 collectionStatuses[i].color = collected ? Gold : Muted;
                 collectionCards[i].color = collected ? new Color(.055f, .19f, .21f, 1) : new Color(.027f, .10f, .13f, 1);
             }
@@ -229,7 +238,7 @@ namespace SwanUnderwater
             RefreshAchievements();
             RefreshSaveRecovery();
             if (run != null && !openRun && saveRecoveryReadOnly)
-                menuProgress.text = "存档读取与恢复\n历史进度已保留，请选择开放关卡";
+                menuProgress.text = L("存档读取与恢复\n历史进度已保留，请选择开放关卡");
             RefreshResult(); RefreshHeader();
         }
 
@@ -267,12 +276,12 @@ namespace SwanUnderwater
         void RefreshMenuProgress(bool openRun)
         {
             var run = state.Current;
-            menuProgress.text = run == null ? "当前开放前" + OceanCampaignAvailability.AvailableLevelCount + "关，请选择关卡" : !openRun ? "历史进度已保留\n请选择已开放关卡开始探索" : "查看本关目标 · 已完成 " + CompletedTargets() + "/" + TotalTargets() + "\n" + CoinProgress() + " · " + (state.UnlimitedTime ? "不限时" : "剩余 " + Clock(run.remainingSeconds));
+            menuProgress.text = run == null ? F("当前开放前{0}关，请选择关卡", OceanCampaignAvailability.AvailableLevelCount) : !openRun ? L("历史进度已保留\n请选择已开放关卡开始探索") : F("查看本关目标 · 已完成 {0}/{1}\n{2} · {3}", CompletedTargets(), TotalTargets(), CoinProgress(), state.UnlimitedTime ? L("不限时") : F("剩余 {0}", Clock(run.remainingSeconds)));
             SetEnabled(targetsButton, openRun);
             bool canReturn = openRun && (tutorial != null ? tutorial.Rules.AllowsMenuReturn(state.CanCollect) : state.CanCollect);
             SetEnabled(resume, canReturn);
-            resume.label.text = run != null && !openRun ? "请先选择开放关卡" : TutorialActive ? "继续教学" : run != null && state.GoalComplete ? "继续探索" : "继续本关";
-            SetEnabled(restart, openRun); SetEnabled(close, canReturn);
+            resume.label.text = L(run != null && !openRun ? "请先选择开放关卡" : TutorialActive ? (tutorial.Rules.TargetsViewed ? "完成教学" : "继续教学") : run != null && state.GoalComplete ? "继续探索" : "继续本关");
+            SetEnabled(restart, openRun); SetEnabled(close, TutorialActive || canReturn);
         }
 
         void BuildMenu()
@@ -340,7 +349,7 @@ namespace SwanUnderwater
                 LevelAllowance(level) + "\n开始新一轮，保留历史最佳与收藏。");
         }
         static string LevelAllowance(int level)
-        { var d = OceanLevelCatalog.Get(level); return (d.TimeLimitSeconds <= 0 ? "不限时" : Mathf.CeilToInt(d.TimeLimitSeconds / 60f) + "分钟") + " · 金币" + d.CoinCount + "枚"; }
+        { var d = OceanLevelCatalog.Get(level); return F("{0} · 金币{1}枚", d.TimeLimitSeconds <= 0 ? L("不限时") : F("{0}分钟", Mathf.CeilToInt(d.TimeLimitSeconds / 60f)), d.CoinCount); }
         void RefreshLevels()
         {
             int pagesCount = (OceanLevelCatalog.Count + PageSize - 1) / PageSize;
@@ -352,11 +361,42 @@ namespace SwanUnderwater
                 if (!exists) continue;
                 var definition = OceanLevelCatalog.Get(level);
                 levelTargets[slot].id = "start_level_" + level;
-                levelLabels[slot].text = "第" + level + "关  " + definition.Name + "    " + Stars(state.Save.bestStars[level - 1]);
-                levelDetails[slot].text = OceanCampaignAvailability.IsOpen(level) ? definition.Brief + " · " + LevelAllowance(level) : OceanCampaignAvailability.UnavailableMessage + " · 历史记录保留";
+                levelLabels[slot].text = F("第{0}关  {1}    {2}", level, L(definition.Name), Stars(state.Save.bestStars[level - 1]));
+                bool open = OceanCampaignAvailability.IsOpen(level);
+                levelTargets[slot].normal = open ? ButtonColor : new Color(.025f,.073f,.10f,.98f);
+                levelLabels[slot].color = open ? Ink : Muted;
+                levelDetails[slot].text = open ? LevelPreview(definition) : F("{0} · 历史记录保留", L(OceanCampaignAvailability.UnavailableMessage));
+                levelDetails[slot].color = open ? Muted : new Color(.64f,.73f,.76f);
             }
             SetEnabled(levelPrevious, levelPage > 0); SetEnabled(levelNext, levelPage + 1 < pagesCount);
-            levelPageLabel.text = "第" + (levelPage + 1) + "章 / 共" + pagesCount + "章";
+            levelPageLabel.text = F("第{0}章 / 共{1}章", levelPage + 1, pagesCount);
+        }
+
+        static string LevelPreview(OceanLevelDefinition definition)
+        {
+            if(OceanLanguage.IsEnglish&&!definition.MechanicOptional)
+            {
+                var parts=new List<string>(4);
+                if(definition.ShellMask!=0)parts.Add(F("贝壳{0}种",Count(definition.ShellMask)));
+                if(definition.FishMask!=0)parts.Add(F("鱼{0}种",Count(definition.FishMask)));
+                if(definition.SharkHits>0)parts.Add(F("单鲨{0}次命中后抓取",definition.SharkHits));
+                if(definition.OrderedShell||definition.OrderedFish)parts.Add(L("依图鉴顺序"));
+                return string.Join(" · ",parts)+" · "+LevelAllowance(definition.Level);
+            }
+            if (!definition.MechanicOptional) return L(definition.Brief)+" · "+LevelAllowance(definition.Level);
+            string kind;
+            switch (definition.Mechanic)
+            {
+                case OceanMechanicKind.RingRace:kind="穿环";break;
+                case OceanMechanicKind.Observation:kind="观察";break;
+                case OceanMechanicKind.RunePuzzle:kind="符文";break;
+                case OceanMechanicKind.CurrentRiding:kind="导流";break;
+                case OceanMechanicKind.Escort:kind="护航";break;
+                default:kind="探索";break;
+            }
+            // A concise, state-derived preview fits the existing large row. The
+            // confirmation keeps the complete authored brief and collection order.
+            return F("可选{0} · 贝壳{1}种 / 鱼{2}种 · {3}", L(kind), Count(definition.ShellMask), Count(definition.FishMask), LevelAllowance(definition.Level));
         }
 
         void BuildCollections()
@@ -377,7 +417,7 @@ namespace SwanUnderwater
                     var anchor = new GameObject("Actual species model " + index).transform;
                     anchor.SetParent(card.transform, false); anchor.localPosition = new Vector3(0, 28, -8);
                     collectionAnchors[index] = anchor;
-                    string name = SpeciesName(index);
+                    string name = SpeciesNameSource(index);
                     Label(card.transform, "Species name", name, 23, new Vector2(0, -38), new Vector2(195, 40));
                     collectionStatuses[index] = Label(card.transform, "Collection status", "未收集", 17, new Vector2(0, -68), new Vector2(190, 30));
                 }
@@ -414,10 +454,11 @@ namespace SwanUnderwater
             var run = state.Current; goalCount = 0;
             if (run != null)
             {
-                if (state.HasMechanic) goalSpecies[goalCount++] = MechanicGoalIndex;
+                if (state.HasMechanic && !state.Definition.MechanicOptional) goalSpecies[goalCount++] = MechanicGoalIndex;
                 AppendTargets(state.ShellTargetMask, 0);
                 AppendTargets(state.FishTargetMask, FishOffset);
                 if (state.RequiresShark) goalSpecies[goalCount++] = SharkIndex;
+                if (state.Definition.MechanicOptional) goalSpecies[goalCount++] = MechanicGoalIndex;
             }
             int pageCount = Math.Max(1, (goalCount + PageSize - 1) / PageSize);
             goalPage = Mathf.Clamp(goalPage, 0, pageCount - 1);
@@ -441,8 +482,8 @@ namespace SwanUnderwater
                     goalNames[cell].rectTransform.anchoredPosition = new Vector2(0, 52);
                     goalStatuses[cell].rectTransform.anchoredPosition = new Vector2(0, -12);
                     goalStatuses[cell].rectTransform.sizeDelta = new Vector2(195, 110);
-                    goalNames[cell].text = state.Definition.Name.Split('·')[0];
-                    goalStatuses[cell].text = (state.MechanicComplete ? "机制完成 " : "机制进度 ") + run.mechanicProgress + "/" + state.Definition.MechanicTarget + "\n" + state.Definition.MechanicHint;
+                    goalNames[cell].text = L(state.Definition.MechanicOptional ? "可选支线" : state.Definition.Name.Split('·')[0]);
+                    goalStatuses[cell].text = F("{0} {1}/{2}\n{3}", L(state.MechanicComplete ? "已完成" : "进度"), run.mechanicProgress, state.Definition.MechanicTarget, L(state.Definition.MechanicHint));
                     goalStatuses[cell].fontSize = 17;
                     goalStatuses[cell].color = state.MechanicComplete ? Gold : Muted;
                     continue;
@@ -455,13 +496,13 @@ namespace SwanUnderwater
                 bool next = index < ShellCount ? state.Definition.OrderedShell && state.NextShellSpecies == index : index < SharkIndex && state.Definition.OrderedFish && state.NextFishSpecies == index - FishOffset;
                 int order = index < ShellCount ? OrderIndex(state.Definition.OrderedShell, state.ShellTargetMask, index) : index < SharkIndex ? OrderIndex(state.Definition.OrderedFish, state.FishTargetMask, index - FishOffset) : -1;
                 goalNames[cell].text = (order < 0 ? "" : (order + 1) + ". ") + SpeciesName(index);
-                goalStatuses[cell].text = caught ? (index < ShellCount ? "本关已收集" : "本关已捕获") : next ? "下一目标" : order >= 0 ? "按顺序寻找" : index < ShellCount ? "本关待寻找" : index < SharkIndex ? "本关待捕获" :
-                    !run.toolOwned ? "先找到渔枪" : run.sharkHits < state.SharkHitTarget ? "最高命中 " + run.sharkHits + "/" + state.SharkHitTarget : "已眩晕，可以抓取";
+                goalStatuses[cell].text = caught ? L(index < ShellCount ? "本关已收集" : "本关已捕获") : next ? L("下一目标") : order >= 0 ? L("按顺序寻找") : index < ShellCount ? L("本关待寻找") : index < SharkIndex ? L("本关待捕获") :
+                    !run.toolOwned ? L("先找到渔枪") : run.sharkHits < state.SharkHitTarget ? F("最高命中 {0}/{1}", run.sharkHits, state.SharkHitTarget) : L("已眩晕，可以抓取");
                 goalStatuses[cell].color = caught || next ? Gold : Muted;
             }
             goalPrevious.rect.gameObject.SetActive(pageCount > 1); goalNext.rect.gameObject.SetActive(pageCount > 1);
             SetEnabled(goalPrevious, goalPage > 0); SetEnabled(goalNext, goalPage + 1 < pageCount);
-            goalPageLabel.text = "本关目标 " + (goalPage + 1) + "/" + pageCount;
+            goalPageLabel.text = F("本关目标 {0}/{1}", goalPage + 1, pageCount);
         }
         void AppendTargets(int mask, int offset)
         {
@@ -470,7 +511,8 @@ namespace SwanUnderwater
                 if ((mask & (1 << species)) != 0) goalSpecies[goalCount++] = offset + species;
         }
         static int OrderIndex(bool ordered, int mask, int species) => ordered ? Count(mask & ((1 << species) - 1)) : -1;
-        static string SpeciesName(int index) => index < ShellCount ? ShellNames[index] : index < SharkIndex ? OceanLevelCatalog.FishNames[index - FishOffset] : "鲨鱼";
+        static string SpeciesNameSource(int index) => index < ShellCount ? ShellNames[index] : index < SharkIndex ? OceanLevelCatalog.FishNames[index - FishOffset] : "鲨鱼";
+        static string SpeciesName(int index) => L(SpeciesNameSource(index));
         void EnsureSpeciesModel(int index)
         { if (speciesModels[index] == null) BuildSpeciesModel(collectionAnchors[index], index); }
         void RefreshCollectionModels()
@@ -536,8 +578,8 @@ namespace SwanUnderwater
             if(level != guideLevel){guideLevel=level;guideHint=0;nextGuideHint=Time.unscaledTimeAsDouble+8;}
             if (state.Current != null && !OceanCampaignAvailability.IsOpen(level))
             {
-                hudProgress.text = "历史进度已保留，请选择开放关卡";
-                hudTime.text = "当前开放前" + OceanCampaignAvailability.AvailableLevelCount + "关 · 捏合展开菜单";
+                hudProgress.text = L("历史进度已保留，请选择开放关卡");
+                hudTime.text = F("当前开放前{0}关 · 捏合展开菜单", OceanCampaignAvailability.AvailableLevelCount);
                 hudTime.color = Muted;
                 return;
             }
@@ -556,28 +598,28 @@ namespace SwanUnderwater
             resultExplore.rect.gameObject.SetActive(completed && state.CanCollect);
             resultNext.rect.gameObject.SetActive(completed && OceanCampaignAvailability.IsOpen(run.level + 1));
             resultReplay.rect.gameObject.SetActive(final);
-            resultExplore.label.text = run != null && !run.coinCollected && !run.timedOut ? "继续探索，收齐金币" : "继续探索海底";
-            if (run != null && !openRun) resultText.text = "历史进度与收藏已保留。\n" + OceanCampaignAvailability.UnavailableMessage + "\n请从主菜单选择已开放关卡。";
-            else if (failed) resultText.text = (state.AmmoExhausted ? state.ShotLimit + "发弹药已用完，挑战失败。\n" : "时间已到，目标尚未完成。\n") +
-                "目标 " + CompletedTargets() + "/" + TotalTargets() + " · " + CoinProgress() + "\n本次发现已进入收藏库。";
-            else if (completed) resultText.text = Stars(state.Stars) + "  本关获得 " + state.Stars + " 星\n" + CoinProgress() + " · " +
-                (run.coinCollected ? "本关金币已收齐" : run.timedOut ? "寻找金币的时间已结束" : "收齐金币可得3星") +
-                (final ? "\n第" + OceanCampaignAvailability.AvailableLevelCount + "关已完成，当前篇章圆满！\n后续关卡" + OceanCampaignAvailability.UnavailableMessage + "。" : "\n目标已完成，可以进入下一关。");
-            else resultText.text = "海底冒险正在继续";
+            resultExplore.label.text = L(run != null && !run.coinCollected && !run.timedOut ? "继续探索，收齐金币" : "继续探索海底");
+            if (run != null && !openRun) resultText.text = F("历史进度与收藏已保留。\n{0}\n请从主菜单选择已开放关卡。", L(OceanCampaignAvailability.UnavailableMessage));
+            else if (failed) resultText.text = F("{0}\n目标 {1}/{2} · {3}\n本次发现已进入收藏库。",
+                state.AmmoExhausted ? F("{0}发弹药已用完，挑战失败。", state.ShotLimit) : L("时间已到，目标尚未完成。"), CompletedTargets(), TotalTargets(), CoinProgress());
+            else if (completed) resultText.text = F("{0}  本关获得 {1} 星\n{2} · {3}\n{4}", Stars(state.Stars), state.Stars, CoinProgress(),
+                L(run.coinCollected ? "本关金币已收齐" : run.timedOut ? "寻找金币的时间已结束" : "收齐金币可得3星"),
+                final ? F("第{0}关已完成，当前篇章圆满！\n后续关卡{1}。", OceanCampaignAvailability.AvailableLevelCount, L(OceanCampaignAvailability.UnavailableMessage)) : L("目标已完成，可以进入下一关。"));
+            else resultText.text = L("海底冒险正在继续");
         }
-        int CompletedTargets() => state.Current == null ? 0 : Count(state.Current.shellMask & state.ShellTargetMask) + Count(state.Current.fishMask & state.FishTargetMask) + (state.RequiresShark && state.Current.sharkCaught ? 1 : 0) + (state.HasMechanic && state.MechanicComplete ? 1 : 0);
-        int TotalTargets() => Count(state.ShellTargetMask) + Count(state.FishTargetMask) + (state.RequiresShark ? 1 : 0) + (state.HasMechanic ? 1 : 0);
-        string CoinProgress() => "金币 " + state.CoinCount + "/" + state.CoinTargetCount;
+        int CompletedTargets() => state.Current == null ? 0 : Count(state.Current.shellMask & state.ShellTargetMask) + Count(state.Current.fishMask & state.FishTargetMask) + (state.RequiresShark && state.Current.sharkCaught ? 1 : 0) + (state.HasMechanic && !state.Definition.MechanicOptional && state.MechanicComplete ? 1 : 0);
+        int TotalTargets() => Count(state.ShellTargetMask) + Count(state.FishTargetMask) + (state.RequiresShark ? 1 : 0) + (state.HasMechanic && !state.Definition.MechanicOptional ? 1 : 0);
+        string CoinProgress() => F("金币 {0}/{1}", state.CoinCount, state.CoinTargetCount);
         string ObjectiveCounts()
         {
             var run = state.Current;
-            if (run == null) return "前" + OceanCampaignAvailability.AvailableLevelCount + "关开放探索";
-            if (!OceanCampaignAvailability.IsOpen(run.level)) return "历史进度已保留 · 请选择开放关卡";
+            if (run == null) return F("前{0}关开放探索", OceanCampaignAvailability.AvailableLevelCount);
+            if (!OceanCampaignAvailability.IsOpen(run.level)) return L("历史进度已保留 · 请选择开放关卡");
             var parts = new List<string>(3);
-            if (state.HasMechanic) parts.Add("机制 " + run.mechanicProgress + "/" + state.Definition.MechanicTarget);
-            if (state.ShellTargetMask != 0) parts.Add("贝壳 " + Count(run.shellMask & state.ShellTargetMask) + "/" + Count(state.ShellTargetMask));
-            if (state.FishTargetMask != 0) parts.Add("鱼类 " + Count(run.fishMask & state.FishTargetMask) + "/" + Count(state.FishTargetMask));
-            if (state.RequiresShark) parts.Add(run.sharkCaught ? "鲨鱼已收集" : "最高命中 " + run.sharkHits + "/" + state.SharkHitTarget);
+            if (state.HasMechanic && !state.Definition.MechanicOptional) parts.Add(F("机制 {0}/{1}", run.mechanicProgress, state.Definition.MechanicTarget));
+            if (state.ShellTargetMask != 0) parts.Add(F("贝壳 {0}/{1}", Count(run.shellMask & state.ShellTargetMask), Count(state.ShellTargetMask)));
+            if (state.FishTargetMask != 0) parts.Add(F("鱼类 {0}/{1}", Count(run.fishMask & state.FishTargetMask), Count(state.FishTargetMask)));
+            if (state.RequiresShark) parts.Add(run.sharkCaught ? L("鲨鱼已收集") : F("最高命中 {0}/{1}", run.sharkHits, state.SharkHitTarget));
             return string.Join(" · ", parts);
         }
 
@@ -585,25 +627,26 @@ namespace SwanUnderwater
         {
             back.rect.gameObject.SetActive(page != Page.Menu);
             bool unavailableRun = state.Current != null && !OceanCampaignAvailability.IsOpen(state.Current.level);
-            close.rect.gameObject.SetActive(page != Page.Confirm && page != Page.Result && !unavailableRun);
+            close.rect.gameObject.SetActive(TutorialActive || (page != Page.Confirm && page != Page.Result && !unavailableRun));
             switch (page)
             {
-                case Page.SaveRecovery: heading.text = "海底世界"; subtitle.text = "存档读取与恢复"; break;
-                case Page.Menu: heading.text = "海底世界"; subtitle.text = unavailableRun ? "历史进度已保留 · 请选择开放关卡" : "冒险暂停 · 随时继续"; break;
-                case Page.Comfort: heading.text = "舒适设置与教学"; subtitle.text = TutorialActive ? "教学中 · 关卡计时与目标暂停" : "设置立即生效并记忆 · 随时退出休息"; break;
-                case Page.ComfortAudio: heading.text = "字级与分项声音"; subtitle.text = "保留总音量 · 各项静音独立记忆"; break;
-                case Page.Levels: heading.text = "选择关卡"; subtitle.text = unavailableLevelNotice ?? OceanLevelCatalog.ChapterNames[levelPage] + " · 第" + (levelPage * PageSize + 1) + "—" + Math.Min(OceanLevelCatalog.Count, (levelPage + 1) * PageSize) + "关"; break;
-                case Page.Targets: heading.text = "本关目标"; subtitle.text = state.Current == null ? "请先选择关卡" : ObjectiveCounts() + " · " + CoinProgress(); break;
-                case Page.CollectionHub: heading.text = "海洋收藏与观察"; subtitle.text = "关卡收集与跨关探索，都留在这里"; break;
-                case Page.Naturalist: heading.text = "海洋观察图鉴"; subtitle.text = NaturalistSummary(); break;
-                case Page.Achievements: heading.text = "海洋成就"; subtitle.text = AchievementSummary(); break;
+                case Page.SaveRecovery: heading.text = L("海底世界"); subtitle.text = L("存档读取与恢复"); break;
+                case Page.Menu: heading.text = L("海底世界"); subtitle.text = L(unavailableRun ? "历史进度已保留 · 请选择开放关卡" : "冒险暂停 · 随时继续"); break;
+                case Page.Comfort: heading.text = L("舒适设置与教学"); subtitle.text = L(TutorialActive ? "教学中 · 关卡计时与目标暂停" : "设置立即生效并记忆 · 随时退出休息"); break;
+                case Page.ComfortAudio: heading.text = L("字级与分项声音"); subtitle.text = L("保留总音量 · 各项静音独立记忆"); break;
+                case Page.Language: heading.text = L("语言 / Language"); subtitle.text = L("跟随系统或选择偏好的界面语言"); break;
+                case Page.Levels: heading.text = L("选择关卡"); subtitle.text = unavailableLevelNotice != null ? L(unavailableLevelNotice) : F("{0} · 第{1}—{2}关", L(OceanLevelCatalog.ChapterNames[levelPage]), levelPage * PageSize + 1, Math.Min(OceanLevelCatalog.Count, (levelPage + 1) * PageSize)); break;
+                case Page.Targets: heading.text = L("本关目标"); subtitle.text = state.Current == null ? L("请先选择关卡") : ObjectiveCounts() + " · " + CoinProgress(); break;
+                case Page.CollectionHub: heading.text = L("海洋收藏与观察"); subtitle.text = L("关卡收集与跨关探索，都留在这里"); break;
+                case Page.Naturalist: heading.text = L("海洋观察图鉴"); subtitle.text = NaturalistSummary(); break;
+                case Page.Achievements: heading.text = L("海洋成就"); subtitle.text = AchievementSummary(); break;
                 case Page.ShellsOne: case Page.ShellsTwo: case Page.Marine: case Page.MarineTwo: case Page.Sharks:
-                    heading.text = "海洋收藏库";
-                    subtitle.text = "已收藏 " + (Count(state.Save.shellMask) + Count(state.Save.fishMask) + (state.Save.shark ? 1 : 0)) + " / " + SpeciesCount + "    ·    " + CollectionGroups[Array.IndexOf(CollectionPages, page)]; break;
-                case Page.Confirm: subtitle.text = "请明确确认本次操作"; break;
+                    heading.text = L("海洋收藏库");
+                    subtitle.text = F("已收藏 {0} / {1}    ·    {2}", Count(state.Save.shellMask) + Count(state.Save.fishMask) + (state.Save.shark ? 1 : 0), SpeciesCount, L(CollectionGroups[Array.IndexOf(CollectionPages, page)])); break;
+                case Page.Confirm: subtitle.text = L("请明确确认本次操作"); RefreshConfirmationCopy(); break;
                 case Page.Result:
-                    heading.text = unavailableRun ? "请选择开放关卡" : state.Failed ? "再试一次" : state.Current != null && state.GoalComplete && OceanCampaignAvailability.IsFinalLevel(state.Current.level) ? "当前篇章圆满" : "关卡完成";
-                    subtitle.text = unavailableRun ? "历史进度与收藏已保留" : "本关结果与海洋收藏"; break;
+                    heading.text = L(unavailableRun ? "请选择开放关卡" : state.Failed ? "再试一次" : state.Current != null && state.GoalComplete && OceanCampaignAvailability.IsFinalLevel(state.Current.level) ? "当前篇章圆满" : "关卡完成");
+                    subtitle.text = L(unavailableRun ? "历史进度与收藏已保留" : "本关结果与海洋收藏"); break;
             }
         }
 
@@ -620,16 +663,41 @@ namespace SwanUnderwater
             foreach (var pair in pages) pair.Value.SetActive(pair.Key == page);
             if (initialized) { Refresh(); ResetInput(); }
         }
-        void Back() => ShowPage(page == Page.Confirm ? confirmReturn : page == Page.ComfortAudio ? Page.Comfort : page == Page.Achievements ? Page.CollectionHub : Page.Menu);
+        void Back() => ShowPage(page == Page.Confirm ? confirmReturn : (page == Page.ComfortAudio || page == Page.Language) ? Page.Comfort : page == Page.Achievements ? Page.CollectionHub : Page.Menu);
         void Confirm(string action, int level, string title, string details)
         {
             if (action == "start_level" && !OceanCampaignAvailability.IsOpen(level)) { ShowUnavailableLevel(level); return; }
             if (action == "restart_level" && state.Current != null && !OceanCampaignAvailability.IsOpen(state.Current.level))
             { ShowUnavailableLevel(state.Current.level); return; }
             confirmReturn = page; confirmAction = action; confirmLevel = level;
-            ShowPage(Page.Confirm); heading.text = title; confirmText.text = details;
-            confirmAccept.label.text = action == "quit" ? "保存并退出" : "确认开始";
+            confirmTitleSource = title; confirmDetailsSource = details;
+            ShowPage(Page.Confirm); RefreshConfirmationCopy();
         }
+        static string L(string source) => OceanLanguage.Text(source);
+        static string F(string source, params object[] values) => OceanLanguage.Format(source, values);
+
+        void RefreshLanguage()
+        {
+            if (this == null || !initialized || disposed || hudProgress == null) return;
+            // Keep current page, confirmations, selection and campaign state intact.
+            // The language service already refreshed static label bindings.
+            teachingHeaderShown = null;
+            Refresh(); RefreshTutorialExitPresentation();
+        }
+
+        void RefreshConfirmationCopy()
+        {
+            if (page != Page.Confirm || string.IsNullOrEmpty(confirmAction)) return;
+            if (confirmAction == "start_level")
+            {
+                var definition = OceanLevelCatalog.Get(confirmLevel);
+                heading.text = F("进入第{0}关", confirmLevel);
+                confirmText.text = F("{0}\n{1}\n{2}\n开始新一轮，保留历史最佳与收藏。", L(definition.Name), L(definition.Brief), LevelAllowance(confirmLevel));
+            }
+            else { heading.text = L(confirmTitleSource); confirmText.text = L(confirmDetailsSource); }
+            confirmAccept.label.text = L(confirmAction == "quit" ? "保存并退出" : "确认开始");
+        }
+
         void Dispatch(string action, int level)
         {
             if (string.IsNullOrEmpty(action)) return;
@@ -722,6 +790,7 @@ namespace SwanUnderwater
         void LateUpdate()
         {
             if (!initialized || !available || disposed) return;
+            RefreshTutorialExitPresentation();
             if(hudRoot.activeSelf && Time.unscaledTimeAsDouble >= nextGuideHint)
             { guideHint=(guideHint+1)%20;nextGuideHint=Time.unscaledTimeAsDouble+8;RefreshHud(); }
             buttonHoveredThisFrame = false;
@@ -733,6 +802,7 @@ namespace SwanUnderwater
             ProcessController(XRNode.RightHand, rightController);
             RecoverUnreachableMenu();
             AnimatePresentation();
+            RefreshTutorialExitPresentation();
         }
 
         void ProcessNativeMenuPinches()
@@ -747,8 +817,9 @@ namespace SwanUnderwater
             if (!initialized || !available || disposed || !hands.TryGetNativeVisionOSMenuPinch(slot, out Ray ray) ||
                 !Finite(ray.origin) || !Finite(ray.direction) ||
                 ray.direction.sqrMagnitude < .5f || float.IsInfinity(ray.direction.sqrMagnitude)) return;
-            Target target = FindByRay(ray, out _, true);
+            Target target = FindByRay(ray, out float distance, true);
             if (target == null) return;
+            RememberPointer(target,ray.GetPoint(distance));
             // Claim before an action can close the menu. A blocked/disabled UI hit still
             // owns this entire native gesture, so it cannot become a world pickup later.
             hands.ConsumeNativeVisionOSMenuPinch(slot);
@@ -827,6 +898,7 @@ namespace SwanUnderwater
             if (selected != null && !IsTransitioning)
             {
                 Highlight(selected);
+                RememberPointer(selected,ray.GetPoint(distance));
                 Vector3 center = ray.GetPoint(distance) - selected.rect.forward * .003f;
                 float radius = pinchReady ? Mathf.Lerp(.010f, .005f, Mathf.Clamp01(strength)) : .010f;
                 for (int i = 0; i < input.cursor.positionCount; i++)
@@ -879,6 +951,7 @@ namespace SwanUnderwater
             input.ray.SetPosition(0, origin); input.ray.SetPosition(1, origin + direction * (selected == null ? 1.1f : nearest));
             input.ray.startColor = input.ray.endColor = selected == null ? new Color(.45f, .85f, .90f, .65f) : Gold;
             Highlight(selected);
+            if (selected != null) RememberPointer(selected,origin+direction*nearest);
             input.device.TryGetFeatureValue(CommonUsages.triggerButton, out bool triggerButton);
             input.device.TryGetFeatureValue(CommonUsages.trigger, out float trigger);
             bool pressed = triggerButton || trigger > .65f;
@@ -893,6 +966,11 @@ namespace SwanUnderwater
             buttonHoveredThisFrame = true;
             target.hovered = true;
         }
+        static void RememberPointer(Target target,Vector3 point)
+        {
+            if (target==null||!Finite(point)) return;
+            target.pointerPoint=point;target.pointerFrame=Time.frameCount;
+        }
         void Activate(Target target)
         {
             if (!available || IsTransitioning || target == null || !target.enabled || !target.rect.gameObject.activeInHierarchy ||
@@ -903,10 +981,21 @@ namespace SwanUnderwater
             ActivationCountForValidation++;
 #endif
             Debug.Log("[CampaignUI] ray_click target=" + target.id);
+            Vector3 point=target.pointerFrame==Time.frameCount?target.pointerPoint:target.rect.position;
+            Quaternion rotation=target.rect.rotation;Vector3 scale=target.rect.lossyScale;
+            Vector3 forward=target.rect.forward;
+            float extent=Mathf.Min(target.rect.rect.width,target.rect.rect.height);
+            bool hasAction=target.action!=null;
             target.action?.Invoke();
+            // Page changes may hide the originating button. A single separate
+            // canvas acknowledges the accepted press at its original world point.
+            // No acknowledgement is emitted by rejected gates or an absent action.
+            if (hasAction&&available&&isActiveAndEnabled&&clickFeedback!=null)
+                clickFeedback.Play(point-forward*.004f,rotation,scale,extent,new Color(1f,.87f,.58f,.92f));
         }
         void ResetInput()
         {
+            if(clickFeedback!=null)clickFeedback.Cancel();
             if (hands != null) { hands.SetMenuHandTargeted(HandType.HandLeft, false); hands.SetMenuHandTargeted(HandType.HandRight, false); }
             unreachableSeconds = 0f;
             blockedUntil = Time.unscaledTimeAsDouble + .35;
@@ -940,7 +1029,7 @@ namespace SwanUnderwater
         {
             var root = new GameObject(name, typeof(RectTransform), typeof(Text)); root.transform.SetParent(parent, false);
             Text text = root.GetComponent<Text>(); text.font = title ? titleFont : bodyFont;
-            text.material = uiMaterial; text.fontSize = size; text.text = value; text.color = Ink;
+            text.material = uiMaterial; text.fontSize = size; OceanLanguage.Bind(text, value); text.color = Ink;
             text.alignment = TextAnchor.MiddleCenter; text.supportRichText = false; text.raycastTarget = false;
             text.horizontalOverflow = HorizontalWrapMode.Wrap; text.verticalOverflow = VerticalWrapMode.Truncate;
             // Noto's ascent+descent is about 1.448 em. Truncate drops a whole line
@@ -982,6 +1071,17 @@ namespace SwanUnderwater
             var line = BuildRay(name); line.loop = true; line.positionCount = 24;
             line.startWidth = line.endWidth = .0017f;
             line.startColor = line.endColor = new Color(1f, .91f, .61f, .96f); return line;
+        }
+
+        void BuildClickFeedback()
+        {
+            var root=new GameObject("Accepted menu press acknowledgement",typeof(RectTransform),typeof(Canvas),typeof(OceanMenuClickFeedback));
+            // Keep the point fixed if the panel collapses toward the head-following
+            // HUD. Lifetime is explicitly owned by this panel, not the page hierarchy.
+            var canvas=root.GetComponent<Canvas>();canvas.renderMode=RenderMode.WorldSpace;
+            canvas.worldCamera=view;canvas.overrideSorting=true;canvas.sortingOrder=32760;
+            clickFeedback=root.GetComponent<OceanMenuClickFeedback>();clickFeedback.material=rayMaterial;
+            clickFeedback.raycastTarget=false;clickFeedback.Cancel();
         }
 
         void BuildRoundedSprite()
@@ -1070,6 +1170,7 @@ namespace SwanUnderwater
         {
             CancelEntryReplay();
             ResetInput();
+            SetTutorialExitVisible(false);
             if (panelRoot != null) panelRoot.SetActive(false);
             if (hudRoot != null) hudRoot.SetActive(false);
         }
@@ -1077,6 +1178,7 @@ namespace SwanUnderwater
         {
             if (!initialized) return;
             panelRoot.SetActive(available && (IsOpen || IsTransitioning)); hudRoot.SetActive(available && !IsOpen && !IsTransitioning);
+            RefreshTutorialExitPresentation();
         }
 
 #if UNITY_EDITOR
@@ -1090,12 +1192,21 @@ namespace SwanUnderwater
             input.validationRay = ray; input.validationStrength = strength;
         }
         public void SetGuideHintForValidation(int index){guideHint=Math.Max(0,index);guideLevel=state.Current==null?0:state.Current.level;nextGuideHint=Time.unscaledTimeAsDouble+8;RefreshHud();}
+        public int GuideHintForValidation=>guideHint;
         public string GuideActionForValidation=>hudProgress.text;
         public string GuideDetailsForValidation=>hudTime.text;
         public RectTransform GuideRectForValidation=>(RectTransform)hudRoot.transform;
         public void ClearValidationRays()
         { leftHand.validationActive = rightHand.validationActive = false; ResetInput(); }
         public int ActivationCountForValidation { get; private set; }
+        public OceanMenuClickFeedback ClickFeedbackForValidation=>clickFeedback;
+        public bool ActivateForValidation(string id)
+        {
+            foreach(Target target in targets)
+                if(target.id==id&&target.rect.gameObject.activeInHierarchy)
+                {int before=ActivationCountForValidation;Activate(target);return ActivationCountForValidation!=before;}
+            return false;
+        }
         public bool IsTargetHoveredForValidation(string id)
         { foreach (Target target in targets) if (target.id == id) return target.hovered; return false; }
         public float ExpansionForValidation => openAmount;
@@ -1138,9 +1249,12 @@ namespace SwanUnderwater
         void OnDestroy()
         {
             if (disposed) return; disposed = true;
+            OceanLanguage.Changed -= RefreshLanguage;
             CancelEntryReplay();
             if (hands != null) hands.SetMenuLocomotionPaused(false);
             DestroyOwned(panelRoot); DestroyOwned(hudRoot);
+            DisposeTutorialExit();
+            if (clickFeedback != null) DestroyOwned(clickFeedback.gameObject);
             if (leftHand.ray != null) DestroyOwned(leftHand.ray.gameObject);
             if (rightHand.ray != null) DestroyOwned(rightHand.ray.gameObject);
             if (leftHand.cursor != null) DestroyOwned(leftHand.cursor.gameObject);

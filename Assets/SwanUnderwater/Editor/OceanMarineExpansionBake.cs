@@ -95,6 +95,8 @@ namespace SwanUnderwater.Editor
         }
         [Serializable] public sealed class Report
         {
+            public bool publicationProjection;
+            public string sourceReportSha256, publicationScope;
             public int schemaVersion = 1;
             public string tool = "OceanMarineExpansionBake", utc, unity, directory, state, error;
             public string species = "Atlantic mackerel", uid = Uid, author, license, sourceUrl = SourceUrl, packageSha256 = ArchiveHash;
@@ -760,6 +762,29 @@ namespace SwanUnderwater.Editor
         /// <summary>Read-only build preflight, including the explicit base-RGB/opaque-alpha255 material contract.
         /// Normal AG alpha remains source X in lossless RGBA32 with error<=1; base remains ASTC4x4.
         /// No import/rewrite/bake/target/exit.</summary>
+        /// <summary>Verify the published projection and every owned output, without re-admitting omitted download archives.
+        /// Retains the original measured model, texture, pose and animation gates; performs no new sampling or writes.</summary>
+        public static void ValidatePublishedAssets()
+        {
+            Require(pending == null, "Admission is still finalizing.");
+            Require(PlayerSettings.GetNormalMapEncoding(UnityEditor.Build.NamedBuildTarget.Android) == NormalMapEncoding.DXT5nm,
+                "Published native normals require the existing Android DXT5nm policy.");
+            Require(File.Exists(PortableReceipt) && Hash(PortableReceipt) == "d7fa3e40d04a99bd2d50f84a76038ba01d5a6487b52c65e4a60e8d089a3c239d",
+                "Missing or changed published admission projection.");
+            Report report = JsonUtility.FromJson<Report>(File.ReadAllText(PortableReceipt));
+            Require(report != null && report.publicationProjection &&
+                report.sourceReportSha256 == "04354d82616c5200a25b3f02a91f7130547804dec778a760b9c1fdf8c5b04172",
+                "Receipt must identify the exact original admission as a published projection.");
+            Require(report.tool == "OceanMarineExpansionBake", "Published receipt tool differs.");
+            Require(report.uid == Uid && report.packageSha256 == ArchiveHash, "Published mackerel source identity differs.");
+            Require(report.success && report.state == "admitted" && report.after != null && report.after.Count > 0,
+                "Published projection is not a completed admission.");
+            VerifyFiles(report.after);
+            Require(SetEqual(report.after, Snapshot(OwnedFiles())), "Published owned output roster changed.");
+            ValidateOutputs(report);
+            Debug.Log("OceanMarineExpansionBake PUBLISHED_ASSETS_PASS: sealed original output bytes and model/texture/animation gates; source download archives and headset acceptance are not revalidated.");
+        }
+
         public static void ValidateForBuild()
         {
             Require(pending == null, "Admission is still finalizing.");

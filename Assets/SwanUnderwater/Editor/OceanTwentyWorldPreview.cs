@@ -58,6 +58,16 @@ namespace SwanUnderwater.Editor
             Directory.CreateDirectory(output);
             SessionState.SetString(Key + "output", output); SessionState.SetString(Key + "start", DateTime.UtcNow.Ticks.ToString());
             SessionState.SetBool(Key + "active", true); Attach();
+            if(Array.IndexOf(args,"-codexTutorialClose")>=0)
+            {
+                int saveIndex=Array.IndexOf(args,"-codexCampaignSaveDir");
+                string saveDirectory=Path.GetFullPath(args[saveIndex+1]);
+                if(Directory.Exists(saveDirectory)&&Directory.GetFileSystemEntries(saveDirectory).Length!=0)
+                {Finish(false,"Use a fresh isolated save for automatic tutorial qualification.");return;}
+                const string seen="ocean_interactive_tutorial_seen_v1";
+                SessionState.SetBool(Key+"tutorialSeenHad",PlayerPrefs.HasKey(seen));SessionState.SetInt(Key+"tutorialSeenValue",PlayerPrefs.GetInt(seen,0));
+                SessionState.SetBool(Key+"tutorialSeenScoped",true);PlayerPrefs.DeleteKey(seen);PlayerPrefs.Save();
+            }
             EditorSceneManager.OpenScene("Assets/Scenes/UnderwaterWorld.unity"); EditorApplication.isPlaying = true;
         }
         static void Attach() { EditorApplication.update -= Tick; EditorApplication.update += Tick; Application.logMessageReceived -= Error; Application.logMessageReceived += Error; }
@@ -87,7 +97,10 @@ namespace SwanUnderwater.Editor
                         Array.IndexOf(Environment.GetCommandLineArgs(), "-codexHundredLevels") >= 0 ||
                         Array.IndexOf(Environment.GetCommandLineArgs(), "-codexCampaignAvailability") >= 0 ||
                         Array.IndexOf(Environment.GetCommandLineArgs(), "-codexUnavailableStartup") >= 0 ||
-                        Array.IndexOf(Environment.GetCommandLineArgs(), "-codexPlayableRelease") >= 0) Submit(camera);
+                        Array.IndexOf(Environment.GetCommandLineArgs(), "-codexSanctuaryArtPreview") >= 0 ||
+                        Array.IndexOf(Environment.GetCommandLineArgs(), "-codexFirstTwentyActivities") >= 0 ||
+                        Array.IndexOf(Environment.GetCommandLineArgs(), "-codexPlayableRelease") >= 0 ||
+                        Array.IndexOf(Environment.GetCommandLineArgs(), "-codexTutorialClose") >= 0) Submit(camera);
                     return;
                 }
                 var hunt = Object.FindFirstObjectByType<TreasureHunt>();
@@ -99,6 +112,43 @@ namespace SwanUnderwater.Editor
         static IEnumerator Exercise(TreasureHunt hunt, Camera camera)
         {
             OceanCampaignController campaign = hunt.Campaign; OceanCampaignState state = campaign.State;
+            bool disabledRankings = Array.IndexOf(Environment.GetCommandLineArgs(), "-codexLeaderboardDisabled") >= 0;
+            if (disabledRankings) EditorTests.OceanLeaderboardDisabledChecks.CheckInScene(campaign, "entry");
+            if(Array.IndexOf(Environment.GetCommandLineArgs(),"-codexTutorialClose")>=0)
+            {
+                Require(state.Current!=null&&state.Current.level==1,"fresh tutorial qualification uses the actual first-level run");
+                Require(campaign.Panel.TutorialActive,"fresh save really offers the automatic lesson");
+                double until=Time.realtimeSinceStartupAsDouble+8;
+                while(campaign.Panel.IsTransitioning||campaign.Panel.WorldInputBlocked)
+                {Require(Time.realtimeSinceStartupAsDouble<until,"tutorial exit becomes ready without input bypass");yield return null;}
+                Require(!campaign.GameplayAllowed,"active lesson keeps actual campaign input paused");
+                Save(camera,"tutorial-actual-world-before-close");
+                string untouched=JsonUtility.ToJson(state.Save);
+                yield return new WaitForSecondsRealtime(.25f);
+                Require(JsonUtility.ToJson(state.Save)==untouched,"automatic lesson freezes the real campaign clock and progress");
+                float clockBefore=state.Current.remainingSeconds;
+                double closeStarted=Time.timeAsDouble;
+                yield return EditorTests.OceanTutorialExitChecks.PressInScene(campaign.Panel,camera,"tutorial_exit");
+                until=Time.realtimeSinceStartupAsDouble+5;
+                while(!campaign.GameplayAllowed)
+                {Require(Time.realtimeSinceStartupAsDouble<until,"closing releases actual campaign input after its existing guard");yield return null;}
+                Require(!campaign.Panel.TutorialActive&&!campaign.Panel.IsOpen,"actual lesson and its menu have closed");
+                float resumedClock=state.Current.remainingSeconds;
+                yield return new WaitForSecondsRealtime(.25f);
+                Require(campaign.GameplayAllowed,"actual gameplay remains available after closing the lesson");
+                Require(state.UnlimitedTime?state.Current.remainingSeconds==resumedClock:state.Current.remainingSeconds<resumedClock,
+                    "existing first-level clock resumes according to its real run settings");
+                Require(state.Current.remainingSeconds<=clockBefore&&clockBefore-state.Current.remainingSeconds<=Time.timeAsDouble-closeStarted+1,
+                    "closing never resets the clock or removes more than elapsed gameplay time");
+                // Compare detached copies so the naturally resumed clock is the only excluded field.
+                var before=JsonUtility.FromJson<OceanSaveData>(untouched);
+                var after=JsonUtility.FromJson<OceanSaveData>(JsonUtility.ToJson(state.Save));
+                before.currentRun.remainingSeconds=after.currentRun.remainingSeconds=0;
+                Require(JsonUtility.ToJson(after)==JsonUtility.ToJson(before),"closing actual world lesson cannot invent campaign or collection progress");
+                Save(camera,"tutorial-actual-world-after-close");
+                Finish(true,"Actual automatic lesson, qualified synthetic ray close, real Campaign.GameplayAllowed and normal clock restore; campaign progress unchanged, isolated Editor save only, no tracked-hand/headset acceptance.");
+                yield break;
+            }
             if (Array.IndexOf(Environment.GetCommandLineArgs(), "-codexUnavailableStartup") >= 0)
             {
                 yield return EditorTests.OceanCampaignAvailabilityTests.RunUnavailableStartupInScene(hunt);
@@ -405,8 +455,54 @@ namespace SwanUnderwater.Editor
                 Finish(true, "Actual mixed-target selection, obstructed grasp, near-seabed physics and giant guardian rendering verified with synthetic inputs.");
                 yield break;
             }
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-codexFirstTwentyActivities") >= 0)
+            {
+                campaign.Panel.SkipTutorialForValidation();
+                foreach (int level in new[] { 6, 9, 14, 16, 18 })
+                {
+                    campaign.HandleAction("start_level",level);
+                    double deadline=Time.realtimeSinceStartupAsDouble+120;
+                    while (campaign.EnvironmentTransitioning)
+                    { Require(Time.realtimeSinceStartupAsDouble<deadline,"side-activity scene loads "+level);yield return null; }
+                    campaign.Panel.SkipTutorialForValidation();
+                    campaign.HandleAction("resume",0);
+                    deadline=Time.realtimeSinceStartupAsDouble+5;
+                    while (!campaign.GameplayAllowed&&Time.realtimeSinceStartupAsDouble<deadline) yield return null;
+                    yield return null;yield return null;
+                    var world=Object.FindFirstObjectByType<UnderwaterWorld>();
+                    Require(campaign.GameplayAllowed&&state.Current.level==level&&world.IsReady,
+                        "production campaign enters side-activity level "+level);
+                    Require(campaign.Mechanics.Rules!=null&&campaign.Mechanics.StationRoot!=null&&
+                        campaign.Mechanics.Rules.Kind==state.Definition.Mechanic&&state.Definition.MechanicOptional,
+                        "production campaign binds the correct optional activity "+level);
+                    Require(campaign.Mechanics.StationRoot.GetChild(0).gameObject.activeSelf,
+                        "optional activity has a reachable visible station "+level);
+                    Require(state.Current.mechanicProgress==0&&!state.GoalComplete,
+                        "opening a new station cannot fabricate player progress "+level);
+                    Save(camera,"activity-"+level+"-entry");
+                    var photo=new GameObject("Isolated optional-activity review camera");
+                    try
+                    {
+                        var lens=photo.AddComponent<Camera>();lens.CopyFrom(camera);lens.enabled=false;
+                        lens.stereoTargetEye=StereoTargetEyeMask.None;
+                        lens.GetUniversalAdditionalCameraData().allowXRRendering=false;
+                        Vector3 node=campaign.Mechanics.NodePosition(0);
+                        Vector3 forward=campaign.Mechanics.StationRoot.GetChild(0).forward;
+                        lens.transform.SetPositionAndRotation(node-forward*2.2f+Vector3.up*.15f,
+                            Quaternion.LookRotation(forward));
+                        Save(lens,"activity-"+level+"-station");
+                    }
+                    finally { Object.Destroy(photo); }
+                    if (level==6) EditorTests.OceanFirstTwentyActivityTests.RunInScene(world);
+                }
+                Finish(true,"Five real campaign configurations and native models captured; synthetic hand/route/lifecycle checks in the actual sanctuary. Isolated Editor saves only; wearer, stereo and device performance remain unverified.");
+                yield break;
+            }
             if (Array.IndexOf(Environment.GetCommandLineArgs(), "-codexSanctuaryArtPreview") >= 0)
             {
+                // This isolated art/map fixture has no tracked hands to complete the
+                // optional first-run lesson. Keep the production lesson unchanged.
+                campaign.Panel.SkipTutorialForValidation();
                 ShaderUtil.allowAsyncCompilation = false;
                 EditorTests.OceanEnvironmentTransitionTests.RunAll();
                 EditorTests.OceanMeshCollisionTests.RunAll();
@@ -559,6 +655,7 @@ namespace SwanUnderwater.Editor
                     Require(!campaign.Panel.TutorialActive, "published level has no isolated teaching input gate " + level);
                 }
                 Require(state.Current.level == level && hunt.GameplayActive, "level starts " + level);
+                if (disabledRankings) EditorTests.OceanLeaderboardDisabledChecks.CheckInScene(campaign, "level-" + level + "-start");
                 if (naturalistChecks && level == 20)
                 {
                     // Observe real imported residents/registry before any synthetic pickups.
@@ -643,6 +740,7 @@ namespace SwanUnderwater.Editor
                 Require(state.Stars == 3 && state.Save.bestStars[level - 1] == 3, "all coins third star " + level);
                 row.stars = state.Stars; campaign.SaveNow();
                 Require(campaign.LastSaveSucceeded && OceanSaveStore.TryLoad(campaign.SaveDirectory, out var loaded, out _) && loaded.currentRun.level == level && loaded.bestStars[level - 1] == 3, "real storage roundtrip " + level);
+                if (disabledRankings) EditorTests.OceanLeaderboardDisabledChecks.CheckInScene(campaign, "level-" + level + "-saved-after-pickups");
                 Debug.Log("[TwentyWorld] passed level=" + level);
                 yield return null;
             }
@@ -729,19 +827,37 @@ namespace SwanUnderwater.Editor
             camera.aspect = 1280f / 720; camera.fieldOfView = 78;
             try
             {
-                foreach (int level in new[] { 1, 6 })
+                bool includeFinalChallenge = Array.IndexOf(Environment.GetCommandLineArgs(), "-codexArtLevelTwenty") >= 0;
+                foreach (int level in includeFinalChallenge ? new[] { 1, 6, 20 } : new[] { 1, 6 })
                 {
                     hunt.Campaign.HandleAction("start_level", level);
                     while (hunt.Campaign.EnvironmentTransitioning) yield return null;
+                    // Fast cached changes can finish before their normal loading toast.
+                    // Let that production notification expire instead of publishing a
+                    // screenshot that still looks as if the map is loading.
+                    var feedback = Object.FindFirstObjectByType<TreasureFeedback>();
+                    double toastDeadline = Time.realtimeSinceStartupAsDouble + 5;
+                    while (feedback != null && feedback.CurrentNotification.StartsWith("正在前往", StringComparison.Ordinal))
+                    {
+                        Require(Time.realtimeSinceStartupAsDouble < toastDeadline, "normal loading notice expires before art capture " + level);
+                        yield return null;
+                    }
                     yield return null;
                     Require(hunt.Campaign.State.Current.level == level && hunt.GameplayActive, "art level playable " + level);
                     hunt.Campaign.Panel.SetAvailable(false);
                     if(PerformanceHud.Instance!=null)PerformanceHud.Instance.gameObject.SetActive(false);
                     var world = Object.FindFirstObjectByType<UnderwaterWorld>();
-                    camera.farClipPlane=level==6?OceanSanctuaryVista.RecommendedFarClipPlane:200f;
+                    camera.farClipPlane=world.ActiveEnvironment==OceanEnvironmentKind.CoralSanctuary?
+                        OceanSanctuaryVista.RecommendedFarClipPlane:200f;
+                    if (world.ActiveEnvironment==OceanEnvironmentKind.CoralSanctuary &&
+                        Array.IndexOf(Environment.GetCommandLineArgs(), "-codexHabitatLayering") >= 0)
+                        EditorTests.OceanHabitatLayeringChecks.RunAll(world);
+                    if (level==6 && Array.IndexOf(Environment.GetCommandLineArgs(), "-codexFirstTwentyActivitySceneChecks") >= 0)
+                        EditorTests.OceanFirstTwentyActivityTests.RunInScene(world);
                     Vector3 spawn = world.ActiveSpawn;
                     Vector3 eye = new Vector3(spawn.x, UnderwaterWorld.SampleRenderedSeabedHeight(spawn.x,spawn.z)+1.5f,spawn.z);
-                    yield return ArtView(camera, eye, eye+new Vector3(0,.8f,14), level == 1 ? "01-classic-entry" : "02-sanctuary-entry", world);
+                    string entryView = level == 1 ? "01-classic-entry" : level == 6 ? "02-sanctuary-entry" : "08-level20-entry";
+                    yield return ArtView(camera, eye, eye+new Vector3(0,.8f,14), entryView, world);
                     if (level == 6)
                     {
                         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-codexSanctuaryContent") >= 0)
@@ -798,6 +914,13 @@ namespace SwanUnderwater.Editor
                             Vector3 edge=spawn+new Vector3(101,1.6f,72);
                             edge.y=UnderwaterWorld.SampleRenderedSeabedHeight(edge.x,edge.z)+1.6f;
                             yield return ArtView(camera,edge,edge+new Vector3(30,3,22),"exploration-07-outward-vista",world);
+                            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-codexHabitatLayering") >= 0)
+                            {
+                                Vector2 point=route[15];
+                                Vector3 back=spawn+new Vector3(point.x,0,point.y);
+                                back.y=UnderwaterWorld.SampleRenderedSeabedHeight(back.x,back.z)+1.6f;
+                                yield return ArtView(camera,back,spawn+Vector3.up*2f,"exploration-08-return-view",world);
+                            }
                         }
                         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-codexSanctuaryDetail") >= 0)
                         {
@@ -814,6 +937,11 @@ namespace SwanUnderwater.Editor
         static IEnumerator ArtView(Camera camera,Vector3 eye,Vector3 focus,string name,UnderwaterWorld world)
         {
             camera.transform.SetPositionAndRotation(eye,Quaternion.LookRotation(focus-eye));
+            var life=world.ActiveEnvironmentRoot.GetComponentInChildren<OceanSanctuaryMicroLife>();
+            Transform previousObserver=life!=null?life.ObserverForValidation:null;
+            if(life!=null)life.SetObserverForValidation(camera.transform);
+            try
+            {
             var lod=world.GetComponentInChildren<ReefProximityLod>();
             if(lod!=null)lod.EvaluateForValidation(eye);
             // Submit the real material variants before reading pixels. The first draw
@@ -842,6 +970,8 @@ namespace SwanUnderwater.Editor
                     if(exp2)Shader.EnableKeyword("FOG_EXP2");else Shader.DisableKeyword("FOG_EXP2");
                 }
             }
+            }
+            finally { if(life!=null)life.SetObserverForValidation(previousObserver); }
         }
 
         static IEnumerator CaptureSanctuaryComposition(UnderwaterWorld world, Camera camera, Vector3 spawn, Vector3 eye)
@@ -938,10 +1068,21 @@ namespace SwanUnderwater.Editor
         {
             if (!SessionState.GetBool(Key + "active", false)) return;
             SessionState.SetBool(Key + "active", false); EditorApplication.update -= Tick; Application.logMessageReceived -= Error;
+            if(SessionState.GetBool(Key+"tutorialSeenScoped",false))
+            {
+                const string seen="ocean_interactive_tutorial_seen_v1";
+                bool had=SessionState.GetBool(Key+"tutorialSeenHad",false);int value=SessionState.GetInt(Key+"tutorialSeenValue",0);
+                if(had)PlayerPrefs.SetInt(seen,value);else PlayerPrefs.DeleteKey(seen);PlayerPrefs.Save();
+                bool restored=PlayerPrefs.HasKey(seen)==had&&PlayerPrefs.GetInt(seen,0)==value;
+                File.WriteAllText(Path.Combine(SessionState.GetString(Key+"output",""),"tutorial-seen-restoration.json"),JsonUtility.ToJson(new TutorialSeenReceipt{restored=restored,originallyPresent=had,originalValue=value},true));
+                SessionState.SetBool(Key+"tutorialSeenScoped",false);
+                if(!restored){success=false;detail+=" Tutorial Seen preference restoration failed.";}
+            }
             report.success = success; report.detail = detail;
             File.WriteAllText(Path.Combine(SessionState.GetString(Key + "output", ""), "report.json"), JsonUtility.ToJson(report, true));
             Debug.Log("TWENTY_WORLD_" + (success ? "PASS " : "FAIL ") + detail); EditorApplication.Exit(success ? 0 : 1);
         }
+        [Serializable] sealed class TutorialSeenReceipt { public bool restored,originallyPresent;public int originalValue; }
     }
 }
 #endif

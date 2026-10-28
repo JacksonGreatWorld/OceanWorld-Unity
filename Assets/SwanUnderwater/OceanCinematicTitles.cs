@@ -79,7 +79,7 @@ namespace SwanUnderwater
             hint = MakeText("Swimming hint", content, bodyFont, 34, uiMaterial, layer);
             hint.rectTransform.sizeDelta = new Vector2(900f, 70f);
             hint.rectTransform.anchoredPosition = new Vector2(0f, -79f);
-            hint.text = SwimHintText;
+            OceanLanguage.Bind(hint, SwimHintText);
             hint.color = new Color(.84f, .94f, .97f, 1f);
             hintOpacity = hint.gameObject.AddComponent<CanvasGroup>();
             hintOpacity.blocksRaycasts = hintOpacity.interactable = false;
@@ -95,6 +95,7 @@ namespace SwanUnderwater
             titleFont.RequestCharactersInTexture(OceanEntry.WelcomeText + OceanEntry.ChapterText, 64, FontStyle.Normal);
             bodyFont.RequestCharactersInTexture(SwimHintText, 34, FontStyle.Normal);
             Font.textureRebuilt += FontRebuilt;
+            OceanLanguage.Changed += RefreshLanguage;
         }
 
         static Text MakeText(string name, Transform parent, Font font, int size, Material material, int layer)
@@ -127,7 +128,7 @@ namespace SwanUnderwater
             failed = false;
             normalContent.SetActive(true);
             error.gameObject.SetActive(false);
-            title.text = chapter ? OceanEntry.ChapterText : OceanEntry.WelcomeText;
+            OceanLanguage.Bind(title, chapter ? OceanEntry.ChapterText : OceanEntry.WelcomeText);
             // Fit once per title; no best-fit/font-size changes or preferredWidth queries during Animate.
             float preferred = Mathf.Max(1f, title.preferredWidth);
             float fit = Mathf.Min(1f, MaximumTitleWidth / preferred);
@@ -174,7 +175,7 @@ namespace SwanUnderwater
             failed = shown = true;
             chapter = false;
             normalContent.SetActive(false);
-            error.text = text ?? string.Empty;
+            OceanLanguage.Bind(error, text ?? string.Empty);
             error.gameObject.SetActive(true);
             opacity.alpha = 1f;
         }
@@ -217,6 +218,16 @@ namespace SwanUnderwater
             }
         }
 
+        void RefreshLanguage()
+        {
+            if (disposed || title == null) return;
+            // The language service has refreshed bound text. Refit without restarting
+            // the cinematic, its opacity envelope, glint or playback clock.
+            float preferred = Mathf.Max(1f, title.preferredWidth);
+            title.rectTransform.localScale = Vector3.one * Mathf.Min(1f, MaximumTitleWidth / preferred);
+            titleFontDirty = bodyFontDirty = true;
+        }
+
         void LateUpdate()
         {
             if (disposed || CanvasUpdateRegistry.IsRebuildingGraphics()) return;
@@ -239,11 +250,12 @@ namespace SwanUnderwater
             Hide();
             disposed = true;
             Font.textureRebuilt -= FontRebuilt;
+            OceanLanguage.Changed -= RefreshLanguage;
             if (Application.isPlaying) Destroy(gameObject);
             else DestroyImmediate(gameObject);
         }
 
-        void OnDestroy() { Font.textureRebuilt -= FontRebuilt; }
+        void OnDestroy() { Font.textureRebuilt -= FontRebuilt; OceanLanguage.Changed -= RefreshLanguage; }
         static float Smooth(float t) { t = Mathf.Clamp01(t); return t * t * (3f - 2f * t); }
         static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
     }

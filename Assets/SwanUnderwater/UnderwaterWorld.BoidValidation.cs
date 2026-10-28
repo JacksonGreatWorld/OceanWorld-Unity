@@ -398,7 +398,7 @@ namespace SwanUnderwater
                 // Use the closest individually tracked hand, including one-hand tracking.
                 Vector3 handPos = Vector3.zero;
                 float handDistance;
-                bool handsActive = handController != null && handController.TryGetClosestActiveHand(school.center, out handPos, out handDistance);
+                bool handsActive = WildlifeHandResponsesAllowed(handController) && handController.TryGetClosestActiveHand(school.center, out handPos, out handDistance);
                 if (handsActive && school.scatterTimer <= 0f)
                 {
                     Vector3 toHand = school.center - handPos;
@@ -537,7 +537,7 @@ namespace SwanUnderwater
             Vector3 position = fish.transform.position;
             Vector3 hand = Vector3.zero;
             float handDistance = float.PositiveInfinity;
-            bool threatened = handController != null &&
+            bool threatened = WildlifeHandResponsesAllowed(handController) &&
                 handController.TryGetClosestActiveHand(position, out hand, out handDistance) && handDistance < 0.9f * 0.9f;
             if (threatened)
             {

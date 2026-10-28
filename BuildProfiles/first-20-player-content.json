@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "profile": "first-20-player-content",
   "playableLevelCount": 20,
   "legacyCatalogCount": 100,
@@ -8,10 +8,11 @@
     "Only levels 1-20 are playable; levels 21-100 keep their stable catalog and save identities.",
     "Preserve all 30 currently available observation categories, their authentic models, material dependencies, near/far LODs and collision geometry.",
     "Historical archive rows, GUIDs and checksums remain as provenance. Raw SourceOnly archives are omitted from this public export. If restored, their bytes and GUIDs must match; original Resources paths and all SourceOnly dependencies must never enter a player.",
-    "Preserve third-party attribution and licenses. Source-byte totals are not promised APK savings."
+    "Preserve third-party attribution and licenses. Source-byte totals are not promised APK savings.",
+    "For this leaderboard-disabled release only, retain the full leaderboard CJK font identity and original meta checksums as provenance; its raw source archive is omitted from this public export. Keep the gameplay/loading/title fonts and licensed pinyin data unchanged."
   ],
-  "excludedSourceBytes": 29753628,
-  "excludedMetaBytes": 10580,
+  "excludedSourceBytes": 46190992,
+  "excludedMetaBytes": 11059,
   "rows": [
     {
       "original": "Assets/Resources/Fish/06_koi.glb",
@@ -120,6 +121,15 @@
       "guid": "8ee0b487a80c449eb3bf8abde2c2f047",
       "sourceBytes": 366896,
       "metaBytes": 2649
+    },
+    {
+      "original": "Assets/Resources/Leaderboard/LeaderboardFont.otf",
+      "archive": "Assets/SourceOnly/UnusedResources/Leaderboard/LeaderboardFont.otf",
+      "sha256": "2c76254f6fc379fddfce0a7e84fb5385bb135d3e399294f6eeb6680d0365b74b",
+      "metaSha256": "aeeb611cffc377d76364c519a500f928d1021d03c2599619a41f3ce1aa611858",
+      "guid": "ff27be13348d4b79896c7cb7934cc8e4",
+      "sourceBytes": 16437364,
+      "metaBytes": 479
     }
   ],
   "requiredResources": [
@@ -194,10 +204,6 @@
     {
       "key": "Fish/23_mandarinfish",
       "source": "Assets/Resources/Fish/23_mandarinfish.glb"
-    },
-    {
-      "key": "Leaderboard/LeaderboardFont",
-      "source": "Assets/Resources/Leaderboard/LeaderboardFont.otf"
     },
     {
       "key": "Leaderboard/PinyinCandidates",

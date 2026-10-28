@@ -90,6 +90,10 @@ namespace SwanUnderwater
         private ReefExperienceSettings experience;
         private float closestSharkDistanceEver = float.PositiveInfinity;
         public bool IsReady { get; private set; }
+        internal Camera WildlifeView => mainCamera;
+        internal HandSwimController WildlifeHands => handController;
+        internal static bool WildlifeHandResponsesAllowed(HandSwimController hands) => hands != null &&
+            hands.CanReadTrackedVisuals && !hands.MenuLocomotionPaused && !hands.InteractionSuppressed;
         private OceanEntry loading;
         private readonly List<UnityEngine.Object> startupResources = new List<UnityEngine.Object>();
 
@@ -122,6 +126,7 @@ namespace SwanUnderwater
         private void OnDestroy()
         {
             seabedOwners.Remove(this);
+            if (seabedOwners.Count == 0) ResetRenderedSeabedVertexCaches();
         }
 
         private System.Collections.IEnumerator Start()
@@ -393,7 +398,7 @@ namespace SwanUnderwater
             }
             if (sandMaterial != null)
             {
-                sandMaterial.SetColor("_BaseColor", sanctuary ? new Color(.91f, 1f, 1.05f) : new Color(.80f, .82f, .74f));
+                sandMaterial.SetColor("_BaseColor", sanctuary ? new Color(.84f, .94f, 1.02f) : new Color(.80f, .82f, .74f));
                 sandMaterial.SetFloat("_SanctuaryBlend", sanctuary ? 1f : 0f);
                 sandMaterial.SetColor("_WaterBottomColor", OceanWaterOptics.Bottom(kind));
                 sandMaterial.SetFloat("_CausticScale", sanctuary ? 3.4f : 1f);
@@ -724,8 +729,7 @@ namespace SwanUnderwater
         }
 
         private static float SeabedVertexHeight(float x, float z, SeabedBand band, OceanEnvironmentKind kind) =>
-            band == SeabedBand.Near ? NearTerrainHeight(x, z, kind) :
-            band == SeabedBand.Medium ? MediumTerrainHeight(x, z) : SampleTerrainHeight(x, z, kind) - .12f;
+            CachedRenderedSeabedVertexHeight(x, z, band, kind);
 
         private static void TerrainInterval(List<float> axis, float value, out float lower, out float upper)
         {
@@ -1321,25 +1325,25 @@ namespace SwanUnderwater
         }
 
         /// <summary>
-        /// Apply a random warm color tint to coral/anemone instances via MaterialPropertyBlock.
-        /// Adds visual variety without increasing draw calls.
+        /// Apply a restrained reef tint without making a separate material for each colony.
         /// </summary>
         private static void ApplyCoralColorVariant(GameObject go)
         {
             Renderer[] rends = go.GetComponentsInChildren<Renderer>();
             if (rends.Length == 0) return;
 
-            // Palette: pink, orange, purple, green, red
+            // Warm living tips and muted olive/lilac bases retain readable colour under
+            // blue water lighting. Avoid the former neon primary colours on pale rock.
             Color[] palette = new Color[]
             {
-                new Color(1.0f, 0.3f, 0.5f),    // hot pink
-                new Color(1.0f, 0.5f, 0.2f),    // bright orange
-                new Color(0.6f, 0.2f, 0.8f),    // vivid purple
-                new Color(0.3f, 0.8f, 0.4f),    // neon green
-                new Color(1.0f, 0.2f, 0.2f),    // bright red
-                new Color(1.0f, 0.85f, 0.2f),   // golden yellow
-                new Color(0.9f, 0.4f, 0.7f),    // magenta
-                new Color(0.5f, 0.9f, 0.8f),    // aqua
+                new Color(.82f, .49f, .43f),   // dusty coral rose
+                new Color(.88f, .61f, .36f),   // warm ochre
+                new Color(.55f, .42f, .61f),   // subdued lilac
+                new Color(.46f, .57f, .35f),   // olive algae
+                new Color(.73f, .39f, .31f),   // terracotta
+                new Color(.84f, .73f, .44f),   // sand gold
+                new Color(.72f, .49f, .61f),   // soft mauve
+                new Color(.43f, .65f, .60f),   // sea green
             };
             Color tint = palette[Random.Range(0, palette.Length)];
 
@@ -1669,6 +1673,10 @@ namespace SwanUnderwater
                         continue;
                     }
                     Material newMat = new Material(fishSwimTemplate) { enableInstancing = true };
+                    // This cache is used by reef heroes and CreateCampaignCreature, never
+                    // by the 1,200 instanced boids. Only these readable fish receive shadows.
+                    newMat.DisableKeyword("_SCHOOL_SIMPLE");
+                    newMat.EnableKeyword("_FISH_RECEIVE_SHADOWS");
                     if (src != null)
                     {
                         // glTFast uses non-standard property names (baseColorTexture, normalTexture, etc.)
@@ -1705,6 +1713,7 @@ namespace SwanUnderwater
                     mats[m] = newMat;
                 }
                 r.sharedMaterials = mats;
+                r.receiveShadows = true;
                 OceanFishVisualProfile.ExpandRendererBounds(r);
                 var properties = new MaterialPropertyBlock();
                 properties.SetFloat("_SwingPhase", phase);
@@ -2084,6 +2093,9 @@ namespace SwanUnderwater
                     bool simpleSchool = schoolAsset && !detailedSource;
                     if (simpleSchool) mat.EnableKeyword("_SCHOOL_SIMPLE");
                     else mat.DisableKeyword("_SCHOOL_SIMPLE");
+                    // This factory also supplies distant large patrols and full-detail
+                    // school fallbacks. Never inherit a hero's shadow-sampling variant.
+                    mat.DisableKeyword("_FISH_RECEIVE_SHADOWS");
                     // Packed metallic/roughness texture and factors stay exactly as copied above.
                     mat.enableInstancing = true;
                     if (schoolAsset)
@@ -2275,7 +2287,7 @@ namespace SwanUnderwater
                 // Use the closest individually tracked hand, including one-hand tracking.
                 Vector3 handPos = Vector3.zero;
                 float handDistance;
-                bool handsActive = handController != null && handController.TryGetClosestActiveHand(school.center, out handPos, out handDistance);
+                bool handsActive = WildlifeHandResponsesAllowed(handController) && handController.TryGetClosestActiveHand(school.center, out handPos, out handDistance);
                 if (handsActive && school.scatterTimer <= 0f)
                 {
                     Vector3 toHand = school.center - handPos;
@@ -2421,7 +2433,7 @@ namespace SwanUnderwater
             fish.retargetTimer -= dt;
             Vector3 hand = Vector3.zero;
             float handDistance = float.PositiveInfinity;
-            bool threatened = handController != null &&
+            bool threatened = WildlifeHandResponsesAllowed(handController) &&
                 handController.TryGetClosestActiveHand(position, out hand, out handDistance) && handDistance < 0.9f * 0.9f;
             if (threatened)
             {
@@ -3054,6 +3066,7 @@ namespace SwanUnderwater
             private readonly float phase;
             private float pauseTimer;
             private float currentSpeed;
+            private float locomotionSpeed;
             private readonly int pocketIndex;
             private readonly float bodyClearance;
             private bool targetIsShelter;
@@ -3084,6 +3097,7 @@ namespace SwanUnderwater
                 habitatCenter = transform.position;
                 floorClearance = Mathf.Clamp(transform.position.y - SampleTerrainHeight(transform.position.x, transform.position.z), 0.25f, 3.5f);
                 this.currentSpeed = speed;
+                this.locomotionSpeed = speed;
                 this.direction = direction.sqrMagnitude > 0.01f ? direction.normalized : Vector3.forward;
                 this.phase = Random.Range(0f, Mathf.PI * 2f);
                 this.escapeSpeedMul = slowEscape ? 1.5f : 2.5f;
@@ -3098,7 +3112,7 @@ namespace SwanUnderwater
                 dt = Mathf.Min(dt, OceanFishSteering.MaximumStep);
                 Vector3 handPos = Vector3.zero;
                 float handDistance;
-                bool handsActive = hands != null && hands.TryGetClosestActiveHand(transform.position, out handPos, out handDistance);
+                bool handsActive = WildlifeHandResponsesAllowed(hands) && hands.TryGetClosestActiveHand(transform.position, out handPos, out handDistance);
                 // --- Escape detection ---
                 if (escapeCooldown > 0f) escapeCooldown -= dt;
 
@@ -3192,6 +3206,16 @@ namespace SwanUnderwater
 
             private void AdvanceFacing(Vector3 desiredVelocity, float dt, float turnRate)
             {
+                // A refuge arrival is an exact safety hold. A previous fright's
+                // momentum must not coast the fish back out of its hiding place.
+                if (IsSheltered) { locomotionSpeed = 0f; return; }
+                // The behaviour chooses an intent (pause, cruise or fright); the body
+                // eases its propulsion instead of jumping from still to a 2.5x burst.
+                // Direction and obstacle/shelter safety remain owned by existing code.
+                float wanted = desiredVelocity.magnitude;
+                locomotionSpeed = Mathf.MoveTowards(locomotionSpeed, wanted,
+                    Mathf.Max(.4f, baseSpeed * (wanted < locomotionSpeed ? 4f : 5f)) * dt);
+                desiredVelocity = (wanted > .00001f ? desiredVelocity / wanted : transform.forward) * locomotionSpeed;
                 Vector3 next = OceanFishSteering.Advance(transform.position, transform.rotation, desiredVelocity,
                     dt, turnRate, upright, out Quaternion heading);
                 transform.SetPositionAndRotation(next, heading);

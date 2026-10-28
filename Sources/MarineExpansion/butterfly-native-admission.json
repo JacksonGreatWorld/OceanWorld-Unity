@@ -1,0 +1,199 @@
+{
+  "schemaVersion": 1,
+  "tool": "OceanButterflyFishBake",
+  "uid": "1a5d97ef77004074a6b4277cd7e43200",
+  "utc": "2026-10-17T11:49:05.0191390Z",
+  "unity": "6000.0.84f1",
+  "state": "admitted",
+  "error": "",
+  "author": "slleggott (@slleggott)",
+  "license": "CC-BY-4.0",
+  "sourceUrl": "https://sketchfab.com/3d-models/butterfly-fish-1a5d97ef77004074a6b4277cd7e43200",
+  "sourceSha256": "e859a429418dcaee2323d5b5ad5a9ab818ec336e8e65801e8a514601cff62927",
+  "packageSha256": "e34bf03aa1866b10df8b1efbfadaea0aa62952152272c094bcb3ebcbab01ef80",
+  "shaderSha256": "dea358b07a7f5220cc0c51493735d4bcb96caffcaad46a2bdb1dc06557b6f9a3",
+  "prefabPath": "Assets/Resources/MarineExpansion/butterfly-fish.prefab",
+  "geometryPath": "Assets/Resources/MarineExpansion/butterfly-fish-geometry.json",
+  "animationPolicy": "No source skin or animation. Static original geometry, canonical +Z nose, GPU procedural tail/pectoral motion through _SwimMotion. No authored-animation claim.",
+  "coordinatePolicy": "Original Collada Y_UP and identity linear scene matrix; canonical X=-sourceZ,Y=sourceY,Z=-sourceX, handedness-reflected with reversed triangle winding. Uniform normalization to one metre nose-to-tail X-range, AABB centred; original UVs/normals/tangent frame retained.",
+  "texturePolicy": "Original 1024px images, no upscaling. Base=original albedo RGB + original opacity R. Normal=lossless RGBA32 original tangent RGB, dedicated RG positive-Z decode independent of URP AG policy; ASTC was rejected after measured normal-angle loss. PBR=(0,roughness,metallic,1). Base/PBR native ASTC4x4, complete mips, calibrated exact-mip GPU readback. Alpha-to-coverage + .20 clip for translucent authored fin coverage, no transparent sorting.",
+  "success": true,
+  "sourceAnimated": false,
+  "vertices": 2095,
+  "triangles": 3688,
+  "finalizationUpdates": 3,
+  "sourceMin": {
+    "x": -939.6097412109375,
+    "y": -718.597900390625,
+    "z": -702.7817993164062
+  },
+  "sourceMax": {
+    "x": 1275.3594970703125,
+    "y": 976.7138671875,
+    "z": 702.7819213867188
+  },
+  "canonicalMin": {
+    "x": -0.317287415266037,
+    "y": -0.38269421458244324,
+    "z": -0.5
+  },
+  "canonicalMax": {
+    "x": 0.317287415266037,
+    "y": 0.38269421458244324,
+    "z": 0.4999999701976776
+  },
+  "shaderBodyHalfExtents": {
+    "x": 0.317287415266037,
+    "y": 0.38269421458244324,
+    "z": 0.5
+  },
+  "navigationSize": {
+    "x": 0.7309063076972961,
+    "y": 0.813336193561554,
+    "z": 1.0240799188613892
+  },
+  "firstPoseDiagonal": 1.410143494606018,
+  "templateNoseTailLength": 1.0,
+  "recommendedNoseTailLength": 0.23999999463558197,
+  "recommendedDiagonal": 0.3384344279766083,
+  "normalFaceAlignment": 0.9991865509761388,
+  "after": [
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/butterfly-fish.meta",
+      "sha256": "e4ebd48c2969b53b2b9d1afbb0d9bd541238fd18ca79311c77d5d284dc6243f8",
+      "bytes": 172
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/butterfly-fish/base-opacity-astc.asset",
+      "sha256": "9d20c1f6e6517efa50098fa3042a100bec2a2622f87811451793629b57e81664",
+      "bytes": 2797301
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/butterfly-fish/base-opacity-astc.asset.meta",
+      "sha256": "31c4ccee70aa7e046f7b8e19ce80d4b131217d6147bd835c6bf1140238557787",
+      "bytes": 188
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/butterfly-fish/butterfly-canonical.asset",
+      "sha256": "4c84861e0ba745df8ed00004220753ea970a620b67257986c246e279cf208271",
+      "bytes": 248577
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/butterfly-fish/butterfly-canonical.asset.meta",
+      "sha256": "29aa73a735efb0c041d8448b33241115a595cd77cdaf69fa401ddfd93689829f",
+      "bytes": 188
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/butterfly-fish/butterfly-pbr.mat",
+      "sha256": "8adf00dcfe70b330383475c46b42ecbf39602631206436b992a76ac6853ea2de",
+      "bytes": 1949
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/butterfly-fish/butterfly-pbr.mat.meta",
+      "sha256": "e73f3921f803ad3a1f19661e1d8cff11b4a6b779586e71607fd712479cffd7f4",
+      "bytes": 188
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/butterfly-fish/metallic-roughness-astc.asset",
+      "sha256": "5926b756a494583984e4eac7fd8facac5e517be79f0fcd357079b62c7da8b849",
+      "bytes": 2797307
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/butterfly-fish/metallic-roughness-astc.asset.meta",
+      "sha256": "6acc0598a19ed27fb834fa18434bffc6093d567be533dc0f168ad0d41c89bb3c",
+      "bytes": 188
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/butterfly-fish/normal-rg-lossless.asset",
+      "sha256": "0b3f79188c00aef0ceec5d6ddbe81d5805043c6d55aba521a45b510100e9475d",
+      "bytes": 11185853
+    },
+    {
+      "path": "Assets/ArtBaked/MarineExpansion/butterfly-fish/normal-rg-lossless.asset.meta",
+      "sha256": "4952e325db271c677ea106fdda7af28c7cecf3424d7d64500193af1a0e476dfa",
+      "bytes": 188
+    },
+    {
+      "path": "Assets/Resources/MarineExpansion/butterfly-fish-geometry.json",
+      "sha256": "8e7bd5d6b9be754672ccc5ec9be3f4ca92c2433e2b34ddf6f963f442dee4e9e3",
+      "bytes": 395
+    },
+    {
+      "path": "Assets/Resources/MarineExpansion/butterfly-fish-geometry.json.meta",
+      "sha256": "7495c8a686d2b70e63aefc00f74585e57253bd033b7b32f8ec992b84ee8bbb3e",
+      "bytes": 158
+    },
+    {
+      "path": "Assets/Resources/MarineExpansion/butterfly-fish.prefab",
+      "sha256": "16463bdcadd47b2f586088629b2c8cc384c479189f4b04bf033a3dd4835f49f6",
+      "bytes": 2537
+    },
+    {
+      "path": "Assets/Resources/MarineExpansion/butterfly-fish.prefab.meta",
+      "sha256": "f36d8d9ab328a7f498b30483b70d4b8f43c38a149a29d71dbfa53c426f1b4ab7",
+      "bytes": 154
+    }
+  ],
+  "textures": [
+    {
+      "role": "base-opacity",
+      "path": "Assets/ArtBaked/MarineExpansion/butterfly-fish/base-opacity-astc.asset",
+      "format": "ASTC_4x4",
+      "graphicsFormat": "RGBA_ASTC4X4_SRGB",
+      "srgb": true,
+      "width": 1024,
+      "height": 1024,
+      "mips": 11,
+      "copyMaximumError": 0,
+      "rgbMaximumError": 114,
+      "alphaMaximumError": 86,
+      "payloadBytes": 1398128,
+      "meanError": 0.43808744861780374,
+      "rmsError": 1.4122411047078258,
+      "alphaMeanError": 0.14218858294214795,
+      "normalRmsDegrees": 0.0,
+      "normalP99Degrees": 0.0
+    },
+    {
+      "role": "normal-rg",
+      "path": "Assets/ArtBaked/MarineExpansion/butterfly-fish/normal-rg-lossless.asset",
+      "format": "RGBA32",
+      "graphicsFormat": "R8G8B8A8_UNorm",
+      "srgb": false,
+      "width": 1024,
+      "height": 1024,
+      "mips": 11,
+      "copyMaximumError": 0,
+      "rgbMaximumError": 0,
+      "alphaMaximumError": 0,
+      "payloadBytes": 5592404,
+      "meanError": 0.0,
+      "rmsError": 0.0,
+      "alphaMeanError": 0.0,
+      "normalRmsDegrees": 0.0,
+      "normalP99Degrees": 0.0
+    },
+    {
+      "role": "metallic-roughness",
+      "path": "Assets/ArtBaked/MarineExpansion/butterfly-fish/metallic-roughness-astc.asset",
+      "format": "ASTC_4x4",
+      "graphicsFormat": "RGBA_ASTC4X4_UNorm",
+      "srgb": false,
+      "width": 1024,
+      "height": 1024,
+      "mips": 11,
+      "copyMaximumError": 0,
+      "rgbMaximumError": 8,
+      "alphaMaximumError": 0,
+      "payloadBytes": 1398128,
+      "meanError": 0.0007274152582681794,
+      "rmsError": 0.034628406395405376,
+      "alphaMeanError": 0.0,
+      "normalRmsDegrees": 0.0,
+      "normalP99Degrees": 0.0
+    }
+  ],
+  "publicationProjection": true,
+  "sourceReportSha256": "275a7b2c1c04bbfd5bbd19a3221874cbd28b681d05d28fbb799ccca6d10ddb5e",
+  "publicationScope": "Public projection of the existing completed source admission. Preserves original output hashes, measured poses, model, texture and animation gates. Download archives, local paths and protected-workspace evidence are omitted. This is not new sampling, new source-archive verification or headset acceptance."
+}

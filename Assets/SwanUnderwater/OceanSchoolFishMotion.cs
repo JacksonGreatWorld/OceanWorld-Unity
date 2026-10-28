@@ -42,7 +42,11 @@ namespace SwanUnderwater
             float targetYaw = state.yaw, targetPitch = 0f;
             if (wantedSpeed > .001f)
             {
-                targetYaw = Mathf.Atan2(desiredVelocity.x, desiredVelocity.z) * Mathf.Rad2Deg;
+                // Pure rise/dive (for example a reef clearance request) has no
+                // horizontal bearing. Keep the animal's current heading instead
+                // of atan2(0,0) forcing every school fish to face world north.
+                if (desiredVelocity.x * desiredVelocity.x + desiredVelocity.z * desiredVelocity.z > .000001f)
+                    targetYaw = Mathf.Atan2(desiredVelocity.x, desiredVelocity.z) * Mathf.Rad2Deg;
                 targetPitch = Mathf.Clamp(-Mathf.Atan2(desiredVelocity.y,
                     new Vector2(desiredVelocity.x, desiredVelocity.z).magnitude) * Mathf.Rad2Deg,
                     -MaximumPitch, MaximumPitch);

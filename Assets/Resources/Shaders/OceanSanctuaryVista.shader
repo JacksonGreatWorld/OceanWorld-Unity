@@ -2,8 +2,8 @@ Shader "SwanUnderwater/SanctuaryVista"
 {
     Properties
     {
-        _Visibility ("Relief contrast through water", Range(0,1)) = .46
-        _Density ("Distant water attenuation per metre", Float) = .0065
+        _Visibility ("Relief contrast through water", Range(0,1)) = .82
+        _Density ("Distant water attenuation per metre", Float) = .0025
         _SurfaceTint ("Matching sanctuary upper water", Color) = (.315,.6825,.8295,1)
         _DepthTint ("Matching sanctuary lower water", Color) = (.008,.065,.13,1)
         _HorizonIntensity ("Matching sky horizon intensity", Float) = 1
@@ -81,8 +81,11 @@ Shader "SwanUnderwater/SanctuaryVista"
                 // can overpower colour-managed fog and flatten this into a pale cutout.
                 // This positive relative light keeps blue bounce, while real normals,
                 // sun direction and baked erosion retain subdued geological relief.
-                half reliefLight = .52h + .28h * sunFacing
-                    + .10h * input.relief.r + .04h * saturate(normal.y);
+                // Contrast comes from the actual lit slope within the water colour,
+                // not a black silhouette or a camera-facing mountain photograph.
+                // Keep a substantial blue bounce even on the unlit face.
+                half reliefLight = .40h + .27h * sunFacing
+                    + .08h * input.relief.r + .04h * saturate(normal.y);
                 half3 pigment = water * reliefLight;
                 // The close-reef ExpSquared fog is much denser. Reusing it beyond
                 // 180 m erases all distant silhouettes. This low-contrast attenuation

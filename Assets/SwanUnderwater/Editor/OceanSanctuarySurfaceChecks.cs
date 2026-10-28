@@ -40,6 +40,7 @@ namespace SwanUnderwater.EditorTests
         {
             public SurfaceMesh support;
             public Vector3[] vertices;
+            public bool arch;
         }
         static int assertions;
         static void Check(bool condition, string message)
@@ -56,16 +57,21 @@ namespace SwanUnderwater.EditorTests
             var supports = new List<SurfaceMesh>();
             var bounds = new List<Bounds>();
             var gardens = new Dictionary<int, Garden>();
-            int renderers = 0, triangles = 0;
+            int renderers = 0, triangles = 0, archGardens = 0, archColonies = 0;
             Material sharedGrowth = null;
             foreach (var renderer in world.ActiveReefRoot.GetComponentsInChildren<MeshRenderer>(true))
             {
                 if (!renderer.name.StartsWith("Attached coral mosaic ", StringComparison.Ordinal)) continue;
                 var lod = renderer.GetComponentInParent<LODGroup>();
-                Check(lod != null && lod.lodCount == 2, "growth shares its host's two real LODs");
+                Check(lod != null, "growth belongs to a real substrate LOD group");
                 var levels = lod.GetLODs();
-                Check(Array.IndexOf(levels[0].renderers, renderer) >= 0 &&
-                    Array.IndexOf(levels[1].renderers, renderer) < 0, "fine colonies belong only to the detailed substrate");
+                bool arch = lod.lodCount == 3 && levels[0].renderers[0].name == "Arch LOD0" &&
+                    levels[1].renderers[0].name == "Arch LOD1" && levels[2].renderers[0].name == "Arch LOD2";
+                Check(lod.lodCount == 2 || arch, "growth shares the two reef LODs or the arch's three real LODs");
+                Check(Array.IndexOf(levels[0].renderers, renderer) >= 0, "fine colonies belong to the detailed substrate");
+                for (int level = 1; level < levels.Length; level++)
+                    Check(Array.IndexOf(levels[level].renderers, renderer) < 0, "every coarser rock LOD excludes fine colonies");
+                if (arch) archGardens++;
                 Check(renderer.shadowCastingMode == ShadowCastingMode.Off && renderer.sharedMaterials.Length == 1 &&
                     renderer.GetComponent<Collider>() == null, "small growth adds neither shadows nor obstacles");
                 if (sharedGrowth == null)
@@ -87,7 +93,7 @@ namespace SwanUnderwater.EditorTests
                 for (int i = 0; i < gardenVertices.Length; i++)
                     gardenVertices[i] = renderer.transform.TransformPoint(gardenVertices[i]);
                 int seed = int.Parse(renderer.name.Substring(renderer.name.LastIndexOf(' ') + 1));
-                gardens.Add(seed, new Garden { support = support, vertices = gardenVertices });
+                gardens.Add(seed, new Garden { support = support, vertices = gardenVertices, arch = arch });
                 triangles += gardenMesh.triangles.Length / 3;
                 renderers++;
             }
@@ -100,6 +106,7 @@ namespace SwanUnderwater.EditorTests
             {
                 Check(colony.style >= 0 && colony.style < styles.Length, "known ecological growth form");
                 styles[colony.style]++;
+                if (gardens.TryGetValue(colony.hostSeed, out var host) && host.arch) archColonies++;
                 Check(Vector3.Distance(colony.root, colony.surfacePoint - colony.normal * .025f) < .00001f,
                     "colony root is embedded in its supporting surface");
                 float error = float.PositiveInfinity;
@@ -127,6 +134,8 @@ namespace SwanUnderwater.EditorTests
             }
             Check(OceanCoralSanctuary.SurfaceColonies.Count > 600 && OceanCoralSanctuary.SurfaceColonies.Count <= 1008,
                 "visible growth is distributed across reefs rather than a few isolated dots");
+            Check(archGardens == 1 && archColonies > 0 && archColonies <= 24,
+                "the arch has one bounded detailed garden while retaining the existing world-wide limits");
             foreach (int count in styles) Check(count > 80, "all five surface forms populate the scene");
             for (int i = 1; i <= 4; i++) Check(OceanCoralSanctuary.RockProfileCounts[i] >= 5,
                 "retained procedural reef uses all four silhouettes with at least five banks each; natural walls are measured separately");

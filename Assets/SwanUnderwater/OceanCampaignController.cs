@@ -203,7 +203,12 @@ namespace SwanUnderwater
                 (State.Current.shellMask & (1 << pickup.kind)) == 0 && pickup.kind != State.NextShellSpecies)
             {
                 OceanEntry.DismissPlayableTitles();
-                if (State.NextShellSpecies >= 0) feedback.ShowCampaignMessage("请先寻找：" + TreasureHunt.SpeciesNames[State.NextShellSpecies]);
+                if (State.NextShellSpecies >= 0)
+                {
+                    string nextName = TreasureHunt.SpeciesNames[State.NextShellSpecies];
+                    feedback.ShowLocalizedCampaignMessage("请先寻找：" + nextName,
+                        () => OceanLanguage.Format("请先寻找：{0}", OceanLanguage.Text(nextName)));
+                }
                 handled = true;
                 return false;
             }
@@ -221,8 +226,10 @@ namespace SwanUnderwater
             {
                 string name = TreasureHunt.SpeciesNames[pickup.kind];
                 int count = CountBits(State.Current.shellMask), goal = CountBits(State.ShellTargetMask);
-                feedback.ShowCampaignMessage(duplicate ? $"该贝壳你已经拥有：{name}（{count}/{goal}）" :
-                    $"你收集到1种贝壳：{name}（{count}/{goal}）", pickup: true, duplicate: duplicate);
+                feedback.ShowLocalizedCampaignMessage(duplicate ? $"该贝壳你已经拥有：{name}（{count}/{goal}）" :
+                    $"你收集到1种贝壳：{name}（{count}/{goal}）",
+                    () => OceanLanguage.Format(duplicate ? "该贝壳你已经拥有：{0}（{1}/{2}）" : "你收集到1种贝壳：{0}（{1}/{2}）",
+                        OceanLanguage.Text(name), count, goal), pickup: true, duplicate: duplicate);
             }
             Debug.Log($"[Campaign] pickup level={State.Current.level} id={pickup.id} kind={pickup.kind} duplicate={duplicate} shellMask={State.Current.shellMask} coin={State.Current.coinCollected} stars={State.Stars}");
             Changed(); return true;
@@ -233,7 +240,7 @@ namespace SwanUnderwater
         {
             if (!GameplayAllowed) return;
             OceanEntry.DismissPlayableTitles();
-            feedback.ShowCampaignMessage(message, pickup: State.MechanicComplete);
+            feedback.ShowLocalizedCampaignMessage(message, Mechanics.MessagePresentation, pickup: State.MechanicComplete);
             Debug.Log($"[Expedition] level={State.Current.level} progress={State.Current.mechanicProgress}/{State.Definition.MechanicTarget} stage={State.Current.mechanicStage} mistakes={State.Current.mechanicMistakes}");
             Changed();
         }
@@ -243,21 +250,35 @@ namespace SwanUnderwater
             if (preparingEntryActors && action == "ammo-exhausted")
             { pendingEntryAmmoFailure = true; return; }
             OceanEntry.DismissPlayableTitles();
+            int shotLimit = State.ShotLimit, hitTarget = State.SharkHitTarget;
+            string rawFishName = value >= 0 && value < OceanCampaignCreatures.FishNames.Length ? OceanCampaignCreatures.FishNames[value] : "";
             switch (action)
             {
-                case "fish": feedback.ShowCampaignMessage("收集到：" + OceanCampaignCreatures.FishNames[value], pickup: true); break;
-                case "tool": feedback.ShowCampaignMessage($"已拥有渔枪！单手握拳，翘拇指、伸食指显枪；弯曲食指射击。本关共{State.ShotLimit}发。", pickup: true); break;
+                case "fish": feedback.ShowLocalizedCampaignMessage("收集到：" + rawFishName,
+                    () => OceanLanguage.Format("收集到：{0}", OceanLanguage.Text(rawFishName)), pickup: true); break;
+                case "tool": feedback.ShowLocalizedCampaignMessage($"已拥有渔枪！单手握拳，翘拇指、伸食指显枪；弯曲食指射击。本关共{shotLimit}发。",
+                    () => OceanLanguage.Format("已拥有渔枪！单手握拳，翘拇指、伸食指显枪；弯曲食指射击。本关共{0}发。", shotLimit), pickup: true); break;
                 case "shark-hit":
                     string hitName = Creatures.SharkDisplayName(Creatures.LastInteractedSharkId);
-                    feedback.ShowCampaignMessage(value >= State.SharkHitTarget ?
-                        hitName + " 已眩晕，靠近握拳抓取！" : $"{hitName} 命中 {value}/{State.SharkHitTarget}", pickup: true, priority: true); break;
-                case "shark": feedback.ShowCampaignMessage("你成功抓到了" + Creatures.SharkDisplayName(Creatures.LastInteractedSharkId) + "！", pickup: true); break;
+                    feedback.ShowLocalizedCampaignMessage(value >= hitTarget ?
+                        hitName + " 已眩晕，靠近握拳抓取！" : $"{hitName} 命中 {value}/{hitTarget}",
+                        () => value >= hitTarget ? OceanLanguage.Format("{0} 已眩晕，靠近握拳抓取！", OceanCampaignCreatures.LocalizeSharkDisplayName(hitName)) :
+                            OceanLanguage.Format("{0} 命中 {1}/{2}", OceanCampaignCreatures.LocalizeSharkDisplayName(hitName), value, hitTarget), pickup: true, priority: true); break;
+                case "shark":
+                    string caughtName = Creatures.SharkDisplayName(Creatures.LastInteractedSharkId);
+                    feedback.ShowLocalizedCampaignMessage("你成功抓到了" + caughtName + "！",
+                        () => OceanLanguage.Format("你成功抓到了{0}！", OceanCampaignCreatures.LocalizeSharkDisplayName(caughtName)), pickup: true); break;
                 case "fish-order":
-                    if (value >= 0) feedback.ShowCampaignMessage("请先抓到：" + OceanCampaignCreatures.FishNames[value]);
+                    if (value >= 0) feedback.ShowLocalizedCampaignMessage("请先抓到：" + rawFishName,
+                        () => OceanLanguage.Format("请先抓到：{0}", OceanLanguage.Text(rawFishName)));
                     return;
-                case "fish-owned": feedback.ShowCampaignMessage("该鱼你已经拥有：" + OceanCampaignCreatures.FishNames[value]); return;
+                case "fish-owned": feedback.ShowLocalizedCampaignMessage("该鱼你已经拥有：" + rawFishName,
+                    () => OceanLanguage.Format("该鱼你已经拥有：{0}", OceanLanguage.Text(rawFishName))); return;
                 case "need-tool": feedback.ShowCampaignMessage("缺少工具，先找到海底的渔枪。"); return;
-                case "shark-remaining": feedback.ShowCampaignMessage(Creatures.SharkDisplayName(Creatures.LastInteractedSharkId) + $" 还需命中 {value} 次，才能抓取。"); return;
+                case "shark-remaining":
+                    string remainingName = Creatures.SharkDisplayName(Creatures.LastInteractedSharkId);
+                    feedback.ShowLocalizedCampaignMessage(remainingName + $" 还需命中 {value} 次，才能抓取。",
+                        () => OceanLanguage.Format("{0} 还需命中 {1} 次，才能抓取。", OceanCampaignCreatures.LocalizeSharkDisplayName(remainingName), value)); return;
                 case "tool-fired":
                     Panel.Refresh(); SaveNow();
                     if (value == 0) feedback.ShowCampaignMessage("最后一发已射出，等待命中结果。");
@@ -267,13 +288,15 @@ namespace SwanUnderwater
                         feedback.ShowCampaignMessage("鱼叉已系回身前 · 靠近握抓，或指向后松手再捏合回收。回收不会补弹。");
                     Panel.Refresh(); SaveNow(); return;
                 case "tool-recovered":
-                    feedback.ShowCampaignMessage($"鱼叉已回收 · 余弹{value}/{State.ShotLimit}。重新伸直食指准备下一发。", pickup: true);
+                    feedback.ShowLocalizedCampaignMessage($"鱼叉已回收 · 余弹{value}/{shotLimit}。重新伸直食指准备下一发。",
+                        () => OceanLanguage.Format("鱼叉已回收 · 余弹{0}/{1}。重新伸直食指准备下一发。", value, shotLimit), pickup: true);
                     Panel.Refresh(); SaveNow(); return;
                 case "tool-miss":
                     if (State.SpearAmmoRemaining > 0) feedback.ShowCampaignMessage(State.RequiresSpearRecovery ? "未命中 · 等待鱼叉回到身前并回收后再试。" : "未命中，瞄准后再次扣动扳机。");
                     return;
                 case "ammo-exhausted":
-                    feedback.ShowCampaignMessage($"{State.ShotLimit}发已用完，挑战失败。可以重新开始本关。", priority: true);
+                    feedback.ShowLocalizedCampaignMessage($"{shotLimit}发已用完，挑战失败。可以重新开始本关。",
+                        () => OceanLanguage.Format("{0}发已用完，挑战失败。可以重新开始本关。", shotLimit), priority: true);
                     Panel.Refresh(); SaveNow(); resultAt = Time.unscaledTimeAsDouble + .8; return;
                 default: return;
             }
@@ -374,8 +397,10 @@ namespace SwanUnderwater
                 hands.SetMenuLocomotionPaused(true); hands.SetInteractionSuppressed(true);
                 resultAt = double.PositiveInfinity;
                 feedback.SetVisible(false); feedback.SetVisible(hunt.CoreActive);
-                feedback.ShowCampaignMessage(level > 20 ? "正在前往" + OceanLevelCatalog.Get(level).Name + "…" :
-                    level >= OceanEnvironmentProfile.SanctuaryFirstLevel ? "正在前往珊瑚秘境…" : "正在前往阳光海湾…");
+                string destination = level > 20 ? OceanLevelCatalog.Get(level).Name :
+                    level >= OceanEnvironmentProfile.SanctuaryFirstLevel ? "珊瑚秘境" : "阳光海湾";
+                feedback.ShowLocalizedCampaignMessage("正在前往" + destination + "…",
+                    () => OceanLanguage.Format("正在前往{0}…", OceanLanguage.Text(destination)));
                 Exception failure = null;
                 yield return RunOwnedSwitchStage(PreparePassageAndLevel(previousRun.level, level), error => failure = error);
                 if (failure != null)

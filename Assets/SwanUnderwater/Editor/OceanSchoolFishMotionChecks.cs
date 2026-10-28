@@ -17,6 +17,7 @@ namespace SwanUnderwater.EditorTests
             Shader shader = Resources.Load<Shader>("Shaders/FishSwim");
             Check(shader != null && !ShaderUtil.ShaderHasError(shader), "real production school shader imports");
             CheckClockContract();
+            CheckVerticalBearing();
             foreach (string name in new[] { "01_clownfish", "02_blue_tang", "23_mandarinfish" })
             {
                 GameObject prefab = Resources.Load<GameObject>("SchoolFish/" + name);
@@ -159,6 +160,33 @@ namespace SwanUnderwater.EditorTests
             // The removed contract advanced CPU by .05 while GPU advanced by .2.
             Check(Mathf.Abs((.2f - .05f) * 4.5f) > .5f,
                 "negative control reproduces the former long-frame phase disagreement");
+        }
+
+        static void CheckVerticalBearing()
+        {
+            foreach (Vector3 heading in new[] { Vector3.right, Vector3.back, new Vector3(-1f, 0f, 1f).normalized })
+                foreach (float sign in new[] { -1f, 1f })
+                {
+                    var state = OceanSchoolFishMotion.Create(heading, .37f, 4.5f);
+                    float originalYaw = state.yaw;
+                    for (int frame = 0; frame < 180; frame++)
+                    {
+                        Vector3 wanted = Vector3.up * sign * .9f;
+                        Vector3 velocity = OceanSchoolFishMotion.Step(ref state, wanted, .12f, false, 1f / 90f, out Quaternion rotation);
+                        Check(Mathf.Abs(Mathf.DeltaAngle(originalYaw, state.yaw)) < .0001f,
+                            "pure vertical clearance request cannot force an unrelated world-north turn");
+                        Check(Mathf.Abs(state.pitch) <= OceanSchoolFishMotion.MaximumPitch + .0001f && Mathf.Abs(state.bank) < .0001f,
+                            "pure rise/dive keeps bounded pitch without a spurious roll");
+                        if (velocity.sqrMagnitude > .00000001f)
+                            Check(Vector3.Dot(velocity.normalized, rotation * Vector3.forward) > .99999f,
+                                "vertical response still translates along the visible nose");
+                    }
+                    Check(Mathf.Abs(state.pitch) > OceanSchoolFishMotion.MaximumPitch - .001f,
+                        "vertical request still produces an actual bounded ascent or descent response");
+                }
+            // Previous atan2(0,0) targeted zero degrees even for an east-facing fish.
+            Check(Mathf.Abs(Mathf.DeltaAngle(90f, Mathf.Atan2(0f, 0f) * Mathf.Rad2Deg)) == 90f,
+                "negative control exposes the former arbitrary north-facing target");
         }
 
         // Independent expression matching the actual HLSL clock contract, rather than

@@ -69,6 +69,7 @@ namespace SwanUnderwater.Editor
         }
         public Report report = new Report();
         OceanCampaignPanel panel; OceanCampaignState state; HandSwimController hands; Camera view; RenderTexture target; Texture2D pixels;
+        int acceptedStartCallbacks, lastStartedLevel;
         IEnumerator Start()
         {
             view = new GameObject("Campaign UI camera").AddComponent<Camera>(); view.transform.position = new Vector3(0, 1.6f, 0);
@@ -94,7 +95,37 @@ namespace SwanUnderwater.Editor
                 Require(count == 5, "five level rows on chapter " + chapter); Require(HasText(OceanLevelCatalog.ChapterNames[chapter]), "catalog chapter name " + chapter);
                 Save("chapter-" + (chapter + 1)); CheckButtonSeparation();
             }
-            Require(levels.Count == OceanLevelCatalog.Count, "all catalog levels selectable");
+            Require(levels.Count == OceanLevelCatalog.Count && levels.Count == 100, "all hundred historical catalog entries remain visible and clickable");
+            Require(OceanCampaignAvailability.AvailableLevelCount == 20, "this release opens exactly the first twenty levels");
+            // Exercise each visible production button. Open levels require confirmation;
+            // closed levels must preserve the complete in-memory history and active run.
+            for (int level = 1; level <= OceanLevelCatalog.Count; level++)
+            {
+                panel.ShowLevelPageForValidation((level - 1) / 5);
+                OceanLevelRun previousRun = state.Current;
+                string beforeSelection = JsonUtility.ToJson(state.Save), beforeHistory = HistoryFingerprint();
+                int callbacksBefore = acceptedStartCallbacks;
+                Require(panel.ClickForValidation("start_level", level), "catalog entry remains clickable " + level);
+                Require(ReferenceEquals(state.Current, previousRun) && JsonUtility.ToJson(state.Save) == beforeSelection && acceptedStartCallbacks == callbacksBefore,
+                    "selecting a catalog row cannot start a run or alter history before confirmation " + level);
+                if (OceanCampaignAvailability.IsOpen(level))
+                {
+                    Require(level <= 20 && panel.PageNameForDiagnostics == "Confirm" && HasText("进入第" + level + "关"),
+                        "published entry opens the correct explicit confirmation " + level);
+                    Require(panel.ClickForValidation("confirm") && state.Current.level == level &&
+                        acceptedStartCallbacks == callbacksBefore + 1 && lastStartedLevel == level,
+                        "published confirmation dispatches exactly one real start callback " + level);
+                    Require(HistoryFingerprint() == beforeHistory, "published start preserves all hundred best-star slots and global collections " + level);
+                }
+                else
+                {
+                    Require(level >= 21 && panel.PageNameForDiagnostics == "Levels" && HasText(OceanCampaignAvailability.UnavailableMessage),
+                        "unpublished entry explains its status without start confirmation " + level);
+                    Require(!panel.ClickForValidation("confirm"), "unpublished entry has no confirm action " + level);
+                    Require(ReferenceEquals(state.Current, previousRun) && JsonUtility.ToJson(state.Save) == beforeSelection && acceptedStartCallbacks == callbacksBefore,
+                        "unpublished entry cannot start or mutate the saved hundred-level history " + level);
+                }
+            }
             panel.ShowLevelPageForValidation(0); yield return new WaitForSecondsRealtime(.6f);
             yield return Press("levels_next"); Require(panel.LevelPageForValidation == 1, "fresh hover/release/pinch turns chapter via production hit-test");
             panel.ShowLevelPageForValidation(3); Require(panel.ClickForValidation("start_level", 20), "choose level twenty"); Save("confirm-level-20");
@@ -125,15 +156,32 @@ namespace SwanUnderwater.Editor
                 Require(panel.ActiveSpeciesModelsForValidation == (page == 4 ? 1 : 5), "final target active model budget page " + page);
                 Save("targets-20-page-" + (page + 1)); if (page < 4) Require(panel.ClickForValidation("targets_next"), "next final target page");
             }
-            Require(speciesSeen.Count == 21 && speciesSeen.Contains("大白鲨"), "final has ten shells ten fish and shark");
+            var expectedFinalTargets = new HashSet<string>(StringComparer.Ordinal) { "鲨鱼" };
+            for (int species = 0; species < 10; species++)
+            {
+                Require(expectedFinalTargets.Add(OceanSpeciesCatalog.Get(15 + species).Name), "distinct final shell identity " + species);
+                Require(expectedFinalTargets.Add(OceanLevelCatalog.FishNames[species]), "distinct final fish identity " + species);
+            }
+            Require(speciesSeen.Count == 21 && expectedFinalTargets.Count == 21 && speciesSeen.SetEquals(expectedFinalTargets),
+                "final has exactly ten named shells, ten named fish and the generic shark target");
             Require(!HasText("下一目标"), "unordered final does not invent a required sequence");
             foreach (int level in new[] { 5, 10, 15, 20 })
             {
                 state.StartLevel(level); CompleteTargets(); panel.ShowResult(true); yield return new WaitForSecondsRealtime(.45f);
                 Require(state.GoalComplete && state.Stars == 2, "goals award two stars " + level);
-                Require(Visible("next_level") == (level < OceanLevelCatalog.Count) && Visible("ending_replay") == (level == OceanLevelCatalog.Count), "only catalog final level has ending " + level);
+                bool final = OceanCampaignAvailability.IsFinalLevel(level);
+                Require(Visible("next_level") == !final && Visible("ending_replay") == final,
+                    "only published level twenty has the ending and no next-level action " + level);
                 Require(Visible("result_explore") && state.CanCollect, "two-star result permits remaining coin exploration " + level);
-                Require(HasText(level == OceanLevelCatalog.Count ? "冒险圆满" : "关卡完成"), "correct result heading " + level); Save("result-" + level + "-two-stars");
+                Require(HasText(final ? "当前篇章圆满" : "关卡完成"), "correct published result heading " + level);
+                if (final)
+                {
+                    Require(HasText("第20关已完成") && HasText("后续关卡" + OceanCampaignAvailability.UnavailableMessage),
+                        "published ending explains later content without promising access");
+                    RefuseNextBeyondPublishedFinal();
+                    panel.ShowResult(true);
+                }
+                Save("result-" + level + "-two-stars");
             }
             for (int coin = 0; coin < 4; coin++) Require(state.CollectCoin(OceanLevelCatalog.CoinId(coin)), "partial final coin accepted " + coin);
             panel.Refresh(); Require(state.Stars == 2 && HasText("金币 4/5"), "four of five coins retains two stars and exact progress"); Save("result-20-four-coins");
@@ -142,14 +190,41 @@ namespace SwanUnderwater.Editor
             for (int shot = 0; shot < state.ShotLimit; shot++) Require(state.TryFireSpear(), "spent boss shot " + shot);
             Require(state.FinalizeSpearAmmo(false), "finite ammunition failure transaction"); panel.ShowResult(false); yield return null;
             Require(Visible("result_retry") && !Visible("result_explore"), "failed boss retry only"); Save("result-20-ammo-failure");
-            state.StartLevel(OceanLevelCatalog.Count); CompleteTargets(); panel.ShowResult(true); yield return null;
-            Require(!Visible("next_level") && Visible("ending_replay") && HasText("冒险圆满"), "new catalog final ending stays reachable"); Save("result-100-two-stars");
+            OceanLevelRun currentBeforeFuture = state.Current;
+            string saveBeforeFuture = JsonUtility.ToJson(state.Save);
+            int callbacksBeforeFuture = acceptedStartCallbacks;
+            panel.ShowLevelPageForValidation((OceanLevelCatalog.Count - 1) / 5);
+            Require(panel.ClickForValidation("start_level", OceanLevelCatalog.Count), "last historical entry remains reachable");
+            Require(panel.PageNameForDiagnostics == "Levels" && HasText(OceanCampaignAvailability.UnavailableMessage) &&
+                !panel.ClickForValidation("confirm"), "level100 stays unavailable rather than becoming another playable ending");
+            Require(ReferenceEquals(state.Current, currentBeforeFuture) && JsonUtility.ToJson(state.Save) == saveBeforeFuture &&
+                acceptedStartCallbacks == callbacksBeforeFuture, "refused level100 leaves the complete history and current failed run unchanged");
+            Save("level-100-unavailable-history-preserved");
             state.StartLevel(18); panel.OpenMenu(); yield return new WaitForSecondsRealtime(.4f); Require(panel.ClickForValidation("resume"), "resume callback");
             yield return new WaitForSecondsRealtime(.65f); Require(!Paused() && !panel.IsOpen && !panel.WorldInputBlocked, "closing releases pause and transition gate"); Save("hud-level-18");
-            OceanCampaign20UiPreview.Finish(true, "One hundred catalog levels, preserved first-twenty model previews, ordered goals, multi-coin stars and catalog-final ending passed in the Editor UI harness.");
+            OceanCampaign20UiPreview.Finish(true, "One hundred preserved catalog entries, twenty published start confirmations, eighty unavailable guards, all twenty-one target identities, ordered goals, multi-coin stars and the level-twenty ending passed in the Editor UI harness.");
         }
         void Handle(string action, int level)
-        { if (action == "start_level") { state.StartLevel(level); panel.Refresh(); panel.CloseMenu(); } else if (action == "resume") panel.CloseMenu(); else if (action == "menu") panel.OpenMenu(); else throw new InvalidOperationException("Unexpected preview callback " + action); }
+        { if (action == "start_level") { acceptedStartCallbacks++; lastStartedLevel = level; state.StartLevel(level); panel.Refresh(); panel.CloseMenu(); } else if (action == "resume") panel.CloseMenu(); else if (action == "menu") panel.OpenMenu(); else throw new InvalidOperationException("Unexpected preview callback " + action); }
+        string HistoryFingerprint() => state.Save.version + "|" + string.Join(",", state.Save.bestStars) + "|" +
+            state.Save.shellMask + "|" + state.Save.fishMask + "|" + state.Save.shark;
+        void RefuseNextBeyondPublishedFinal()
+        {
+            Require(state.Current.level == 20 && state.GoalComplete, "next-level refusal begins at the legitimately completed published final");
+            OceanLevelRun previousRun = state.Current;
+            string previousSave = JsonUtility.ToJson(state.Save);
+            int callbacksBefore = acceptedStartCallbacks;
+            Require(!panel.ClickForValidation("next_level"), "hidden next button cannot dispatch level21");
+            // Probe the existing dispatch guard as well as the visible-button gate.
+            // A missing guard reaches Handle and fails as an unexpected callback.
+            var dispatch = typeof(OceanCampaignPanel).GetMethod("Dispatch", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+            Require(dispatch != null, "production dispatch guard remains available for direct-action validation");
+            dispatch.Invoke(panel, new object[] { "next_level", 0 });
+            Require(panel.IsOpen && panel.PageNameForDiagnostics == "Levels" && HasText(OceanCampaignAvailability.UnavailableMessage),
+                "a direct next action from twenty returns to a reachable unavailable explanation");
+            Require(ReferenceEquals(state.Current, previousRun) && JsonUtility.ToJson(state.Save) == previousSave && acceptedStartCallbacks == callbacksBefore,
+                "next from twenty cannot enter twenty-one or change history and final-run progress");
+        }
         void ShowTargets() { panel.OpenMenu(); Require(panel.ClickForValidation("show_targets"), "open required species"); }
         void CompleteTargets()
         {

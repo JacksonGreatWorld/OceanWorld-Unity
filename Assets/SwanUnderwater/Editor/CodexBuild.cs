@@ -189,6 +189,15 @@ namespace SwanUnderwater.Editor
         // again before packaging. No headset or production service is used.
         public static void RunRegressionChecks()
         {
+            using (OceanLanguage.OverrideForValidation(OceanLanguageChoice.SimplifiedChinese))
+            {
+                RunChineseRegressionChecks();
+                SwanUnderwater.EditorTests.OceanLanguageChecks.RunAll();
+            }
+            Debug.Log("OCEAN_REGRESSION_CHECKS_PASS");
+        }
+        static void RunChineseRegressionChecks()
+        {
             SwanUnderwater.EditorTests.OceanCampaignAvailabilityTests.RunAll();
             SwanUnderwater.EditorTests.OceanPlayerContentBuildChecks.RunAll();
             SwanUnderwater.EditorTests.WaterStrokeTrajectoryTests.RunAll();
@@ -212,6 +221,9 @@ namespace SwanUnderwater.Editor
             SwanUnderwater.EditorTests.OceanMenuPressGateTests.RunAll();
             SwanUnderwater.EditorTests.OceanSpearTriggerTests.RunAll();
             SwanUnderwater.EditorTests.RenderedSeabedSegmentTests.RunAll();
+            if (HasArgument("-codexSeabedCacheTiming"))
+                SwanUnderwater.EditorTests.OceanRenderedSeabedCacheChecks.RunAll();
+            else SwanUnderwater.EditorTests.OceanRenderedSeabedCacheChecks.Validate();
             SwanUnderwater.EditorTests.OceanCampaignTests.RunAll();
             SwanUnderwater.EditorTests.OceanEnvironmentTransitionTests.RunAll();
             SwanUnderwater.EditorTests.OceanMapPassageTests.RunAll();
@@ -219,13 +231,16 @@ namespace SwanUnderwater.Editor
             SwanUnderwater.Editor.OceanFishVisualChecks.Run();
             SwanUnderwater.EditorTests.OceanSchoolFishMotionChecks.RunAll();
             SwanUnderwater.EditorTests.OceanNearFishMotionChecks.RunAll();
+            SwanUnderwater.EditorTests.OceanCreatureResponseChecks.RunAll();
+            SwanUnderwater.EditorTests.OceanTutorialExitChecks.RunAll();
+            SwanUnderwater.EditorTests.OceanMarineResidentChecks.CheckNativeSteering();
             SwanUnderwater.EditorTests.OceanBoidTransformCacheTests.RunAll();
             SwanUnderwater.EditorTests.OceanDiagnosticLogTests.RunAll();
             SwanUnderwater.EditorTests.OceanNaturalistIntegrationChecks.RunAll();
             SwanUnderwater.EditorTests.OceanMarketMaterialChecks.RunAll();
-            OceanMarineExpansionBake.ValidateForBuild();
-            OceanButterflyFishBake.ValidateForBuild();
-            OceanMarineCompanionBake.ValidateForBuild();
+            OceanMarineExpansionBake.ValidatePublishedAssets();
+            OceanButterflyFishBake.ValidatePublishedAssets();
+            OceanMarineCompanionBake.ValidatePublishedAssets();
             SwanUnderwater.EditorTests.OceanResidentDensityTests.RunAll();
             SwanUnderwater.EditorTests.OceanSharkMotionTests.RunAll();
             SwanUnderwater.EditorTests.OceanCampaignGuideTests.RunAll();
@@ -233,6 +248,7 @@ namespace SwanUnderwater.Editor
             if (OceanReleaseFeatures.LeaderboardsEnabled) SwanUnderwater.EditorTests.OceanLeaderboardTests.RunAll();
             else SwanUnderwater.EditorTests.OceanLeaderboardDisabledChecks.RunAll();
             SwanUnderwater.EditorTests.OceanPublicExportChecks.RunAll();
+            SwanUnderwater.EditorTests.OceanSlimFontChecks.RunAll();
             SwanUnderwater.EditorTests.OceanCampaignCreatureTests.RunAll();
             SwanUnderwater.EditorTests.OceanWaterOpticsTests.RunAll();
             SwanUnderwater.EditorTests.OceanCampaignSyncTests.RunAll();
@@ -247,9 +263,11 @@ namespace SwanUnderwater.Editor
             SwanUnderwater.EditorTests.OceanAudioPreferencesTests.RunAll();
             SwanUnderwater.EditorTests.OceanCampaignBiomeTests.RunAll();
             SwanUnderwater.EditorTests.OceanMechanicRulesTests.RunAll();
+            SwanUnderwater.EditorTests.OceanFirstTwentyActivityTests.RunAll();
+            SwanUnderwater.EditorTests.OceanActivityReadabilityChecks.RunAll();
+            SwanUnderwater.EditorTests.OceanMenuClickFeedbackTests.RunAll();
             SwanUnderwater.EditorTests.OceanMechanicSceneTests.RunAll();
             SwanUnderwater.EditorTests.OceanInstalledSaveChecks.RunIfRequested();
-            Debug.Log("OCEAN_REGRESSION_CHECKS_PASS");
         }
 
         public static void BuildAndroid()
@@ -306,9 +324,13 @@ namespace SwanUnderwater.Editor
             int previousCode = PlayerSettings.Android.bundleVersionCode;
             bool previousLog = PlayerSettings.usePlayerLog;
             bool previousTiming = PlayerSettings.enableFrameTimingStats;
+            bool previousExportProject = EditorUserBuildSettings.exportAsGoogleAndroidProject;
             var previousPreloadedAssets = PlayerSettings.GetPreloadedAssets();
             try
             {
+                // This entry point promises an APK. A cached VibeLab/Gradle export
+                // preference must not turn the .apk output path into a directory.
+                EditorUserBuildSettings.exportAsGoogleAndroidProject = false;
                 PlayerSettings.bundleVersion = version;
                 PlayerSettings.Android.bundleVersionCode = versionCode;
                 PlayerSettings.usePlayerLog = true;
@@ -326,6 +348,8 @@ namespace SwanUnderwater.Editor
                 info.bytes = report.summary.totalSize.ToString(CultureInfo.InvariantCulture);
                 if (report.summary.result != BuildResult.Succeeded)
                     throw new BuildFailedException($"Optimized Android build {report.summary.result}; errors={report.summary.totalErrors}");
+                if (!File.Exists(apk) || Directory.Exists(apk))
+                    throw new BuildFailedException("APK build did not produce a regular installation file: " + apk);
                 SwanUnderwater.EditorTests.OceanPlayerContentBuildChecks.ValidatePackedAssets(report, outputDir);
                 var reefAssets = new System.Text.StringBuilder("packed_type\tbytes\tsource\n");
                 long reefTextureBytes = 0; int bakedTextures = 0, legacyBakedTextures = 0, originalTextures = 0;
@@ -408,6 +432,7 @@ namespace SwanUnderwater.Editor
                 PlayerSettings.Android.bundleVersionCode = previousCode;
                 PlayerSettings.usePlayerLog = previousLog;
                 PlayerSettings.enableFrameTimingStats = previousTiming;
+                EditorUserBuildSettings.exportAsGoogleAndroidProject = previousExportProject;
                 PlayerSettings.SetPreloadedAssets(previousPreloadedAssets);
                 AssetDatabase.SaveAssets();
                 File.WriteAllText(manifest, JsonUtility.ToJson(info, true));

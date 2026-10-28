@@ -280,7 +280,7 @@ namespace SwanUnderwater
         static bool MeetsGoal(OceanLevelRun run)
         {
             var definition = OceanLevelCatalog.Get(run.level);
-            return (definition.Mechanic == OceanMechanicKind.None || run.mechanicProgress >= definition.MechanicTarget) &&
+            return (definition.Mechanic == OceanMechanicKind.None || definition.MechanicOptional || run.mechanicProgress >= definition.MechanicTarget) &&
                 (definition.SharkHits == 0 || (run.toolOwned && run.sharkHits >= definition.SharkHits && run.sharkCaught)) &&
                 (run.shellMask & GetShellTargetMask(run.level)) == GetShellTargetMask(run.level) &&
                 (run.fishMask & GetFishTargetMask(run.level)) == GetFishTargetMask(run.level);

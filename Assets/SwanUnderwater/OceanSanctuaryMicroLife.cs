@@ -50,6 +50,15 @@ namespace SwanUnderwater
         public int VentCount => vents.Count;
         public int ActiveRendererCount { get; private set; }
         public int ActiveParticleBudget { get; private set; }
+#if UNITY_EDITOR
+        public Transform ObserverForValidation => viewer;
+        public void SetObserverForValidation(Transform observer)
+        {
+            // Isolated render fixtures may select proximity using their own camera.
+            // This swaps only a borrowed reference; patch transforms never move.
+            viewer=observer;RefreshVisibility();
+        }
+#endif
 
         /// <summary>
         /// Call once after sanctuary geometry/vent authoring, with the persistent
@@ -70,7 +79,7 @@ namespace SwanUnderwater
                 return existing;
             }
             Shader shader = Resources.Load<Shader>("Shaders/BubbleParticle");
-            Texture2D texture = Resources.Load<Texture2D>("Textures/Bubbles/bubble_transparent");
+            Texture2D texture = Resources.Load<Texture2D>("Bubbles/bubble_ring_glowCircle_512");
             if (shader == null || texture == null || sharedBubbleMaterial == null)
             {
                 Debug.LogWarning("[SanctuaryMicroLife] Existing particle resources missing; optional local life omitted.");
@@ -188,7 +197,7 @@ namespace SwanUnderwater
             RefreshVisibility();
         }
 
-        /// <summary>Recompute only visibility/emission. Patch transforms remain fixed.</summary>
+        /// <summary>Recompute visibility and low-frequency flow. Patch transforms remain fixed.</summary>
         public void RefreshVisibility()
         {
             if (!initialized) return;
@@ -230,8 +239,26 @@ namespace SwanUnderwater
                     float distance = Vector3.Distance(viewer.position,patch.anchor);
                     var main = patch.particles.main;
                     main.startColor = Color.Lerp(nearTint,farTint,Mathf.InverseLerp(4f,radius,distance));
+                    // Reuse this four-Hz proximity tick. Native particles carry the
+                    // flow between ticks; there is no per-particle CPU traversal.
+                    Vector3 flow=SuspendedCurrentVelocity(patch.anchor,Time.time);
+                    var velocity=patch.particles.velocityOverLifetime;
+                    velocity.x=flow.x;velocity.y=flow.y;velocity.z=flow.z;
                 }
             }
+        }
+
+        /// <summary>Metres/second, world anchored and bounded; shares the grass stream axis.</summary>
+        public static Vector3 SuspendedCurrentVelocity(Vector3 anchor,float seconds)
+        {
+            // Same spatial phase, slow clock and .84/.543 stream axis as the
+            // SanctuarySeagrass shader. A gentle positive drift carries tiny life
+            // through a surge, rather than every patch sliding in one straight line.
+            float phase=anchor.x*.084f+anchor.z*.061f;
+            float time=seconds*.64f;
+            float along=.082f+.024f*Mathf.Sin(phase-time);
+            float across=.014f*Mathf.Sin(phase*1.83f-time*1.65f);
+            return new Vector3(.84f*along-.543f*across,.012f,.543f*along+.84f*across);
         }
 
         void OnDisable()

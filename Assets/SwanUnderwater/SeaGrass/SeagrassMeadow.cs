@@ -19,6 +19,10 @@ namespace SwanUnderwater
         readonly List<Object> owned = new List<Object>();
         readonly List<Vector2> roots = new List<Vector2>(MaximumTufts);
         public IReadOnlyList<Vector2> RootPositions => roots;
+#if UNITY_EDITOR
+        readonly List<Vector2> routeEdgeRoots = new List<Vector2>();
+        public IReadOnlyList<Vector2> RouteEdgeRootPositions => routeEdgeRoots;
+#endif
 
         public bool IsNearGrass(Vector2 worldXZ, float clearance)
         {
@@ -54,6 +58,7 @@ namespace SwanUnderwater
         {
             public Vector2 center;
             public float radius, aspect, rotation;
+            public bool routeEdge;
         }
 
         /// <summary>Build once in world metres; destroy the returned object to release generated resources.</summary>
@@ -379,6 +384,14 @@ namespace SwanUnderwater
                 AddReefPatches(entrance, ReefHabitat.Pockets, origin, rng, 5, 0f, 14f);
                 foreach (Patch patch in entrance) { result.Add(patch); all.Add(patch); }
             }
+            else
+            {
+                // Spend part of each EXISTING outer-region quota along the sandy
+                // journey, before the first dense rock-footing patches consume it.
+                // The centre lane stays bare and the stands alternate, taper and
+                // break up with the same root noise; this is not a roadside fence.
+                AddSanctuaryRoutePatches(result,all,origin,solids,rng,zone);
+            }
             // Long irregular strips skirt actual rock footings; AABB exclusion is
             // conservative so leaves do not start inside collision-supported reefs.
             for (int attempt = 0; attempt < 200 && result.Count < 5; attempt++)
@@ -412,6 +425,35 @@ namespace SwanUnderwater
             return result;
         }
 
+        static void AddSanctuaryRoutePatches(List<Patch> result,List<Patch> all,Vector2 origin,
+            IReadOnlyList<Bounds> solids,System.Random rng,int zone)
+        {
+            // Two neighbouring route segments per district, in the same order as
+            // the authored expedition. No new terrain, collider or moving anchor.
+            int[] starts={0,10,12,14,16,18,21};
+            var route=OceanCoralSanctuary.ExplorationRouteOffsets;
+            for(int part=0;part<2;part++)
+            {
+                int segment=starts[zone]+part;
+                Vector2 delta=route[segment+1]-route[segment];
+                Vector2 direction=delta.normalized;
+                Vector2 side=new Vector2(-direction.y,direction.x);
+                Vector2 along=Vector2.Lerp(route[segment],route[segment+1],
+                    Range(rng,.27f,.63f));
+                int firstSide=(zone+part)%2==0?1:-1;
+                for(int attempt=0;attempt<6;attempt++)
+                {
+                    int sign=attempt%2==0?firstSide:-firstSide;
+                    float lateral=3.6f+(attempt/2)*1.1f+Range(rng,-.30f,.45f);
+                    Vector2 p=origin+along+side*(sign*lateral);
+                    if(!CanAddPatch(p,all,origin,106f)||!ClearOfSolidReefs(p,solids))continue;
+                    var patch=new Patch { center=p,radius=Range(rng,4.8f,7.1f),
+                        aspect=Range(rng,.15f,.28f),rotation=Mathf.Atan2(direction.y,direction.x),routeEdge=true };
+                    result.Add(patch);all.Add(patch);break;
+                }
+            }
+        }
+
         void PlantSanctuaryPatch(Patch patch, Vector2 origin, Chunk[] near, Chunk[] distant,
             System.Random rng, int target)
         {
@@ -425,6 +467,10 @@ namespace SwanUnderwater
                 Vector2 point = patch.center + new Vector2(x * cos - z * sin, x * sin + z * cos);
                 if (!ClearRoot(point, origin, pockets, 107f) || !ClearOfSolidReefs(point, OceanCoralSanctuary.SolidBounds)) continue;
                 if (OnSanctuaryRoute(point - origin)) continue;
+                // Leave room for the resting arc AND GPU current at route shoulders,
+                // so readable near-water vegetation cannot brush through the diver.
+                if(patch.routeEdge&&(NearRoute(point-origin,OceanCoralSanctuary.ExplorationRouteOffsets,2.2f)||
+                    NearRoute(point-origin,OceanCoralSanctuary.ExplorationShortcutOffsets,2.2f)))continue;
                 float noise = Mathf.PerlinNoise(point.x * .72f + 61f, point.y * .72f + 93f);
                 if (noise < .32f) continue;
                 bool crowded = false;
@@ -448,13 +494,18 @@ namespace SwanUnderwater
                 {
                     float leafAngle = rotation + blade * 2.39996f;
                     float leafHeight = Mathf.Clamp(height * Range(rng, .78f, 1.10f), .27f, 1.35f);
-                    float width = Range(rng, .036f, .068f) * (leafHeight > 1f ? 1.10f : 1f);
+                    // Low broad leaves and taller narrow ribbons read as different
+                    // growth forms while retaining three blades and the same LOD mesh.
+                    float width = Range(rng, .036f, .068f) * (leafHeight > 1f ? .86f : leafHeight < .55f ? 1.18f : 1f);
                     float phase = Range(rng, -.7f, .7f);
                     Vector2 root = point + new Vector2(Mathf.Cos(leafAngle), Mathf.Sin(leafAngle)) * .025f;
                     AddSanctuaryBlade(near[cell], root, origin, leafHeight, width, leafAngle, phase, tint, 5);
                     if (blade < 2) AddSanctuaryBlade(distant[cell], root, origin, leafHeight, width, leafAngle, phase, tint, 2);
                 }
                 roots.Add(point); TuftCount++;
+#if UNITY_EDITOR
+                if(patch.routeEdge)routeEdgeRoots.Add(point);
+#endif
             }
         }
 
@@ -482,14 +533,23 @@ namespace SwanUnderwater
             Vector3 across = new Vector3(-direction.z, 0f, direction.x);
             Vector3 root = new Vector3(point.x - origin.x,
                 UnderwaterWorld.SampleRenderedSeabedHeight(point.x, point.y) + RootLift, point.y - origin.y);
-            float lean = height * .22f;
+            // Author a soft, asymmetric resting arc. GPU current adds movement to it;
+            // it no longer has to turn a straight upright card into a flexible leaf.
+            // Both LODs sample this same curve and keep identical root/tip positions.
+            float individuality=Mathf.Sin(point.x*1.71f+point.y*.83f+phase*2.4f);
+            float lean = height * (.29f+.13f*individuality);
+            float curl = height * (.08f+.035f*Mathf.Cos(point.x*.67f-point.y*1.13f+phase));
             int first = chunk.positions.Count;
             for (int section = 0; section < segments; section++)
             {
                 float t = section / (float)segments;
-                Vector3 centre = root + Vector3.up * (height * t) + direction * (lean * t * t);
+                Vector3 centre = root + Vector3.up * (height * t) + direction * (lean * t * t) +
+                    across*(curl*Mathf.Sin(t*Mathf.PI)*t);
                 float halfWidth = width * .5f * (1f + .20f * Mathf.Sin(t * Mathf.PI)) * (1f - t * .70f);
-                Vector3 left = centre - across * halfWidth, right = centre + across * halfWidth;
+                // A shallow twist avoids every blade being a rigid, flat ribbon. The
+                // base stays horizontal, so both root edges still meet the true floor.
+                Vector3 edge=Quaternion.AngleAxis(individuality*24f*t,direction)*across;
+                Vector3 left = centre - edge * halfWidth, right = centre + edge * halfWidth;
                 if (section == 0)
                 {
                     // Both edge roots touch the actual rendered floor even on a basin slope.

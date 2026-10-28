@@ -95,7 +95,12 @@ namespace SwanUnderwater
             string text = progress.VisitedCount == Sites.Count
                 ? "七处秘境已探索 · 珊瑚海巡游完成\n继续寻找本关的鱼、贝壳和金币"
                 : $"发现 · {site.name}（{progress.VisitedCount}/{Sites.Count}）\n{site.hint}";
-            feedback.TryShowExplorationMessage(text);
+            bool allVisited = progress.VisitedCount == Sites.Count;
+            int visited = progress.VisitedCount, total = Sites.Count;
+            string siteName = site.name, siteHint = site.hint;
+            feedback.TryShowLocalizedExplorationMessage(text, () => allVisited ?
+                OceanLanguage.Text("七处秘境已探索 · 珊瑚海巡游完成\n继续寻找本关的鱼、贝壳和金币") :
+                OceanLanguage.Format("发现 · {0}（{1}/{2}）\n{3}", OceanLanguage.Text(siteName), visited, total, OceanLanguage.Text(siteHint)));
             Debug.Log($"[SanctuaryDiscovery] site={found} name={site.name} visited={progress.VisitedCount}/{Sites.Count}; session only, no score or stars");
         }
 

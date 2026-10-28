@@ -61,6 +61,8 @@ namespace SwanUnderwater.Editor
         }
         [Serializable] public sealed class Report
         {
+            public bool publicationProjection;
+            public string sourceReportSha256, publicationScope;
             public int schemaVersion = 1;
             public string tool = "OceanButterflyFishBake", uid = Uid, utc, unity, directory, state, error;
             public string author, license, sourceUrl, sourceSha256 = DaeSha, packageSha256 = ArchiveSha, shaderSha256;
@@ -291,6 +293,27 @@ namespace SwanUnderwater.Editor
             finally { if (!AssetDatabase.Contains(texture)) Object.DestroyImmediate(texture); }
         }
         static Vector3 Normal(byte r, byte g) { float x = r / 127.5f - 1f, y = g / 127.5f - 1f; return new Vector3(x, y, Mathf.Sqrt(Mathf.Max(0f, 1f - x * x - y * y))).normalized; }
+
+        /// <summary>Verify the published projection and every owned output, without re-admitting omitted download archives.
+        /// Retains the original measured model, texture, pose and animation gates; performs no new sampling or writes.</summary>
+        public static void ValidatePublishedAssets()
+        {
+            Require(pending == null, "Admission is still finalizing.");
+            Require(File.Exists(Portable) && Hash(Portable) == "1616ff7de82d699a5ae6525a010237012b468b58ec1f4bd98bafdb21f16627a9",
+                "Missing or changed published admission projection.");
+            Report report = JsonUtility.FromJson<Report>(File.ReadAllText(Portable));
+            Require(report != null && report.publicationProjection &&
+                report.sourceReportSha256 == "275a7b2c1c04bbfd5bbd19a3221874cbd28b681d05d28fbb799ccca6d10ddb5e",
+                "Receipt must identify the exact original admission as a published projection.");
+            Require(report.tool == "OceanButterflyFishBake", "Published receipt tool differs.");
+            Require(report.uid == Uid && report.packageSha256 == ArchiveSha && report.sourceSha256 == DaeSha, "Published butterfly source identity differs.");
+            Require(report.success && report.state == "admitted" && report.after != null && report.after.Count > 0,
+                "Published projection is not a completed admission.");
+            VerifyFiles(report.after);
+            Require(Equal(report.after, Snapshot(Owned())), "Published owned output roster changed.");
+            ValidateOutputs(report);
+            Debug.Log("OceanButterflyFishBake PUBLISHED_ASSETS_PASS: sealed original output bytes and model/texture/animation gates; source download archives and headset acceptance are not revalidated.");
+        }
 
         public static void ValidateForBuild()
         {

@@ -58,7 +58,9 @@ namespace SwanUnderwater
         public void Suspend()
         {
             Dwell = 0; CarrySeconds = 0; holding = false;
-            if (CarriesItem(Kind)) Stage = 0;
+            // Focus is a continuous head/hand observation, not an earned node.
+            // Resuming after a menu or lost tracking must focus again before a shutter.
+            if (CarriesItem(Kind) || Kind == OceanMechanicKind.Observation) Stage = 0;
         }
         OceanMechanicOutcome Progress()
         { Completed++; Stage = 0; Dwell = 0; CarrySeconds = 0; holding = false; return OceanMechanicOutcome.Progress; }

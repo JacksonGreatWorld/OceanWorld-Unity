@@ -19,7 +19,7 @@ namespace SwanUnderwater
         Func<Vector3, Vector3, bool> segmentClear;
         Vector3 home, goal, escapeStart, escapeAway, escapeSide, blockedHeading;
         float clearance, clock, goalTimer, escapeTimer, dodgeTimer, aimHeld, dodgeCooldown, escapeBreakTimer, blockedTimer;
-        float speed, yaw, pitch, bank, patrolPhase;
+        float speed, yaw, yawVelocity, pitch, bank, patrolPhase, proximityCooldown;
         float cruiseSpeed, aimDelay;
         uint randomState;
         bool configured, hasGoal, escaping, dodging, captureReady, escapeFollowThrough;
@@ -29,6 +29,7 @@ namespace SwanUnderwater
         public float EscapeDistance { get; private set; }
         public int EscapeCount { get; private set; }
         public int DodgeCount { get; private set; }
+        public int YieldCount { get; private set; }
         public float Speed => speed;
         public Vector3 HomePosition => home;
         public string MotionState => captureReady ? "capture" : escaping ? "escape" : dodging ? "dodge" : hasGoal ? "cruise" : "holding";
@@ -55,7 +56,8 @@ namespace SwanUnderwater
             aimDelay = .24f + NextUnit() * .10f;
             patrolPhase = NextUnit() * Mathf.PI * 2f;
             clock = goalTimer = escapeTimer = dodgeTimer = aimHeld = dodgeCooldown = speed = blockedTimer = escapeBreakTimer = 0f;
-            EscapeCount = DodgeCount = 0; EscapeDistance = 0f;
+            yawVelocity = proximityCooldown = 0f;
+            EscapeCount = DodgeCount = YieldCount = 0; EscapeDistance = 0f;
             EscapeTarget = escapeStart = home;
             escaping = dodging = captureReady = escapeFollowThrough = false;
             hasGoal = false; configured = true;
@@ -68,12 +70,13 @@ namespace SwanUnderwater
             clock += dt;
             goalTimer = Mathf.Max(0f, goalTimer - dt);
             dodgeCooldown = Mathf.Max(0f, dodgeCooldown - dt);
+            proximityCooldown = Mathf.Max(0f, proximityCooldown - dt);
             blockedTimer = Mathf.Max(0f, blockedTimer - dt);
             captureReady = readyToCapture;
             if (captureReady)
             {
                 // A completed target becomes reachable. It stays at its earned location rather than snapping to the diver.
-                escaping = dodging = hasGoal = false; aimHeld = 0f;
+                escaping = dodging = hasGoal = false; aimHeld = yawVelocity = 0f;
                 speed = Mathf.MoveTowards(speed, 0f, dt * 5.5f);
                 bank = Mathf.MoveTowards(bank, 0f, dt * 24f);
                 pitch = Mathf.MoveTowards(pitch, 0f, dt * 24f);
@@ -104,6 +107,7 @@ namespace SwanUnderwater
                 { dodging = false; hasGoal = false; goalTimer = .15f; }
             }
             UpdateAimThreat(dt, aimThreat, aimRay);
+            UpdatePlayerProximity(playerPosition);
 
             if (!hasGoal && goalTimer <= 0f)
             {
@@ -130,7 +134,13 @@ namespace SwanUnderwater
             }
             float oldYaw = yaw;
             float turnRate = escaping || dodging ? MaximumTurnRate : 68f;
-            yaw = Mathf.MoveTowardsAngle(yaw, desiredYaw, dt * turnRate);
+            // A new goal or a hit used to jump immediately from no yaw to the full
+            // turn rate, then stop just as abruptly. Retain turn inertia across
+            // replans while the existing nose-first throttle prevents side slip.
+            float smoothedYaw = Mathf.SmoothDampAngle(yaw, desiredYaw, ref yawVelocity,
+                escaping || dodging ? .16f : .24f, turnRate, dt);
+            yaw += Mathf.Clamp(Mathf.DeltaAngle(yaw, smoothedYaw), -turnRate * dt, turnRate * dt);
+            yawVelocity = Mathf.Clamp(yawVelocity, -turnRate, turnRate);
             pitch = Mathf.MoveTowards(pitch, desiredPitch, dt * 23f);
             float yawRate = Mathf.DeltaAngle(oldYaw, yaw) / dt;
             bank = Mathf.MoveTowards(bank, Mathf.Clamp(-yawRate * .075f, -MaximumBank, MaximumBank), dt * 35f);
@@ -214,7 +224,23 @@ namespace SwanUnderwater
             }
         }
 
-        bool TryPlanOffset(Vector3 direction, float distance, bool flee)
+        void UpdatePlayerProximity(Vector3 player)
+        {
+            // Do not wait for the old 4–6 second patrol goal to expire when a diver
+            // swims into this animal's path. This is a gentle yield, not another hit
+            // reaction; earned capture and the stronger dodge/escape keep priority.
+            if (captureReady || escaping || dodging || proximityCooldown > 0f) return;
+            Vector3 away = Vector3.ProjectOnPlane(transform.position - player, Vector3.up);
+            float distance = Mathf.Max(2.8f, clearance + .9f);
+            if (away.sqrMagnitude >= distance * distance ||
+                Mathf.Abs(transform.position.y - player.y) > clearance + 1f) return;
+            proximityCooldown = 2.4f;
+            if (away.sqrMagnitude < .0001f) away = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
+            if (TryPlanOffset(away, 3.2f, false, player))
+            { goalTimer = 3.2f; YieldCount++; }
+        }
+
+        bool TryPlanOffset(Vector3 direction, float distance, bool flee, Vector3? awayFrom = null)
         {
             Vector3 origin = transform.position;
             direction = Vector3.ProjectOnPlane(direction, Vector3.up);
@@ -246,6 +272,9 @@ namespace SwanUnderwater
                     tested |= 1 << selected;
                     Vector3 candidate = origin + heading * length;
                     if (flee) candidate.y = Mathf.Min(candidate.y + .10f, home.y + 1f);
+                    if (awayFrom.HasValue &&
+                        Vector3.ProjectOnPlane(candidate - awayFrom.Value, Vector3.up).sqrMagnitude <=
+                        Vector3.ProjectOnPlane(origin - awayFrom.Value, Vector3.up).sqrMagnitude + .5f) continue;
                     if (!ValidSegment(origin, candidate)) continue;
                     goal = candidate; hasGoal = true; return true;
                 }

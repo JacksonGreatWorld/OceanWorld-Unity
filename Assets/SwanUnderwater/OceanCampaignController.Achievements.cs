@@ -57,7 +57,9 @@ namespace SwanUnderwater
                 foreach (var definition in OceanAchievementCatalog.All)
                     if (definition.Id == id) { name = definition.Name; break; }
                 if (name == null) { achievementNotices.Dequeue(); continue; }
-                if (feedback.TryShowAchievementMessage("成就达成 · " + name))
+                string noticeName = name;
+                if (feedback.TryShowLocalizedAchievementMessage("成就达成 · " + noticeName,
+                    () => OceanLanguage.Format("成就达成 · {0}", OceanLanguage.Text(noticeName))))
                 {
                     achievementNotices.Dequeue(); nextAchievementNotice = Time.unscaledTimeAsDouble + 5;
                     Debug.Log("[Achievements] unlocked=" + id);

@@ -10,6 +10,10 @@ Shader "SwanUnderwater/SanctuaryOrganic"
         _WorldMapping ("World-space limestone", Range(0,1)) = 0
         _WorldScale ("Limestone repeats per metre", Range(0.1,3)) = 0.85
         _GrowthPigment ("Living surface pigmentation", Range(0,1)) = 0
+        _Smoothness ("Submerged surface response", Range(0,0.6)) = 0.22
+        _CausticStrength ("Refracted sunlight", Range(0,0.3)) = 0.10
+        _CausticScale ("Shared water light scale", Float) = 3.4
+        _WaterBottomColor ("Deep water background match", Color) = (.008,.065,.13,1)
     }
     SubShader
     {
@@ -25,6 +29,10 @@ Shader "SwanUnderwater/SanctuaryOrganic"
             half _WorldMapping;
             float _WorldScale;
             half _GrowthPigment;
+            half _Smoothness;
+            half _CausticStrength;
+            float _CausticScale;
+            half4 _WaterBottomColor;
         CBUFFER_END
         TEXTURE2D(_BaseMap); SAMPLER(sampler_BaseMap);
         TEXTURE2D(_BumpMap); SAMPLER(sampler_BumpMap);
@@ -57,6 +65,8 @@ Shader "SwanUnderwater/SanctuaryOrganic"
             #pragma multi_compile_instancing
             #pragma multi_compile _ _MAIN_LIGHT_SHADOWS _MAIN_LIGHT_SHADOWS_CASCADE _MAIN_LIGHT_SHADOWS_SCREEN
             #pragma multi_compile_fragment _ _SHADOWS_SOFT _SHADOWS_SOFT_LOW _SHADOWS_SOFT_MEDIUM _SHADOWS_SOFT_HIGH
+            #include "OceanSurfaceLighting.hlsl"
+            #include "OceanWaterHorizon.hlsl"
             struct Varyings
             {
                 float4 positionCS : SV_POSITION;
@@ -65,12 +75,14 @@ Shader "SwanUnderwater/SanctuaryOrganic"
                 half4 tangentWS : TEXCOORD2;
                 float2 uv : TEXCOORD3;
                 half3 color : TEXCOORD4;
+                UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
             Varyings vert(Attributes input)
             {
                 Varyings output=(Varyings)0;
                 UNITY_SETUP_INSTANCE_ID(input);
+                UNITY_TRANSFER_INSTANCE_ID(input, output);
                 UNITY_INITIALIZE_VERTEX_OUTPUT_STEREO(output);
                 output.positionWS=TransformObjectToWorld(SanctuaryPosition(input.positionOS.xyz,input.color.a));
                 output.positionCS=TransformWorldToHClip(output.positionWS);
@@ -82,6 +94,7 @@ Shader "SwanUnderwater/SanctuaryOrganic"
             }
             half4 frag(Varyings input, FRONT_FACE_TYPE face:FRONT_FACE_SEMANTIC):SV_Target
             {
+                UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
                 half3 geometricNormal=normalize(input.normalWS);
                 half3 normal=geometricNormal;
@@ -114,7 +127,7 @@ Shader "SwanUnderwater/SanctuaryOrganic"
                     // projection's axis normal, preserving softly eroded silhouettes.
                     normal=normalize(geometricNormal+perturb);
                     half grey=dot(colour,half3(.2126h,.7152h,.0722h));
-                    colour=lerp(grey.xxx,colour,.44h);
+                    colour=lerp(grey.xxx,colour,.66h);
                     // Broad mineral variation follows the rock in world space. It is
                     // deliberately subtle; crevice darkness comes from mesh colour and
                     // real shadows, rather than a painted horizontal contour band.
@@ -141,17 +154,27 @@ Shader "SwanUnderwater/SanctuaryOrganic"
                     float4 shadowCoord=TransformWorldToShadowCoord(input.positionWS);
                 #endif
                 Light sun=GetMainLight(shadowCoord,input.positionWS,half4(1,1,1,1));
-                half diffuse=saturate(dot(normal,sun.direction));
                 half hemisphere=saturate(normal.y*.5h+.5h);
                 half3 waterBounce=lerp(half3(.025h,.055h,.065h),half3(.075h,.105h,.105h),hemisphere);
                 half3 ambient=max(SampleSH(normal),0)*.78h+waterBounce;
-                half direct=diffuse*sun.shadowAttenuation*sun.distanceAttenuation;
-                half3 lit=albedo*(ambient+sun.color*(direct*.94h));
+                float3 waterRay=input.positionWS-GetCameraPositionWS();
+                float waterDistance=length(waterRay);
+                half nearLight=1-smoothstep(18,42,waterDistance);
+                // Derivatives must be evaluated outside fragment-varying shadow/normal
+                // branches; otherwise quad divergence can make filtered ridges flicker.
+                half focus=OceanRefractedCaustic(input.positionWS,sun.direction,_CausticScale)
+                    *_CausticStrength*nearLight*saturate(normal.y);
+                half sourceLuma=dot(colour,half3(.2126h,.7152h,.0722h));
+                half smoothness=clamp(_Smoothness+(sourceLuma-.4h)*.12h,.06h,.48h);
+                half3 lit=OceanDielectricLighting(albedo,smoothness,normal,
+                    GetWorldSpaceNormalizeViewDir(input.positionWS),sun,ambient,focus);
                 half extraDepth=max(0.0h,-input.positionWS.y-4.3h);
                 lit*=exp2(-extraDepth*half3(.065h,.026h,.010h));
-                float opticalDepth=distance(input.positionWS,GetCameraPositionWS())*unity_FogParams.x;
+                float opticalDepth=waterDistance*unity_FogParams.x;
                 float transmission=saturate(exp2(-opticalDepth*opticalDepth));
-                return half4(lerp(unity_FogColor.rgb,lit,transmission),1.0h);
+                half3 background=OceanWaterHorizon(unity_FogColor.rgb,_WaterBottomColor.rgb,
+                    waterRay.y/max(.0001,waterDistance));
+                return half4(lerp(background,lit,transmission),1.0h);
             }
             ENDHLSL
         }

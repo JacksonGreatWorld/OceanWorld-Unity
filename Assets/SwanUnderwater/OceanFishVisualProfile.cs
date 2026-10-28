@@ -143,30 +143,41 @@ namespace SwanUnderwater
         static readonly int MotionId = Shader.PropertyToID("_SwimMotion");
         static readonly int PhaseId = Shader.PropertyToID("_SwingPhase");
         static readonly int FrequencyId = Shader.PropertyToID("_SwingFreq");
+        static readonly int SchoolClockId = Shader.PropertyToID("_SchoolClock");
+        static readonly int BodyId = Shader.PropertyToID("_FishBody");
         readonly Transform transform;
         readonly Renderer[] renderers;
         readonly MaterialPropertyBlock[] blocks;
+        readonly bool[] deforming;
+        readonly float[] phaseOffsets;
         readonly float length, cadence;
+        readonly int firstRenderer = -1;
         Vector3 previousPosition, previousForward;
-        float phase, speed, turn;
+        float phase, speed, turn, stroke = 1f;
+        bool owned;
 
         public OceanFishMotion(GameObject fish, float bodyLength)
         {
             transform = fish.transform;
-            length = Mathf.Max(.08f, bodyLength);
+            length = Finite(bodyLength) ? Mathf.Max(.08f, bodyLength) : .08f;
             renderers = fish.GetComponentsInChildren<Renderer>(true);
             blocks = new MaterialPropertyBlock[renderers.Length];
+            deforming = new bool[renderers.Length];
+            phaseOffsets = new float[renderers.Length];
             cadence = OceanFishVisualProfile.ClownfishCadence;
             for (int i = 0; i < renderers.Length; i++)
             {
+                Material material = renderers[i].sharedMaterial;
+                // Authored skins keep their original Animator, bounds and property block.
+                // This clock only owns the static mesh deformation shader's contract.
+                if (renderers[i] is SkinnedMeshRenderer || !SupportsClock(material)) continue;
+                deforming[i] = true;
                 blocks[i] = new MaterialPropertyBlock();
                 OceanFishVisualProfile.ExpandRendererBounds(renderers[i]);
                 renderers[i].GetPropertyBlock(blocks[i]);
-                if (i != 0) continue;
-                phase = blocks[i].GetFloat(PhaseId);
-                Material material = renderers[i].sharedMaterial;
-                if (material != null && material.HasProperty(FrequencyId))
-                    cadence = Mathf.Max(.3f, material.GetFloat(FrequencyId));
+                if (firstRenderer >= 0) continue;
+                firstRenderer = i;
+                cadence = ReadFrequency(material, blocks[i]);
             }
             previousPosition = transform.position;
             previousForward = transform.forward;
@@ -175,20 +186,50 @@ namespace SwanUnderwater
         /// <summary>Return an ambient fish to its shared shader clock when its temporary movement owner ends.</summary>
         public void Release()
         {
+            if (!owned) return;
+            float timestamp = Time.time;
             for (int i = 0; i < renderers.Length; i++)
             {
-                if (renderers[i] == null) continue;
+                if (!deforming[i] || renderers[i] == null) continue;
+                Material material = renderers[i].sharedMaterial;
+                if (!SupportsClock(material)) continue;
                 renderers[i].GetPropertyBlock(blocks[i]);
+                float visiblePhase = ReadRenderedPhase(material, blocks[i], timestamp);
+                // Mode 0 uses time*frequency+offset. Rebase its offset to the
+                // current owned phase, rather than jumping to the old shared clock.
+                blocks[i].SetFloat(PhaseId, visiblePhase - timestamp * ReadFrequency(material, blocks[i]));
                 blocks[i].SetVector(MotionId, Vector4.zero);
                 renderers[i].SetPropertyBlock(blocks[i]);
             }
+            owned = false;
         }
 
         public void Tick(float deltaTime)
         {
-            if (transform == null || deltaTime <= 0f || float.IsNaN(deltaTime) || float.IsInfinity(deltaTime)) return;
+            if (transform == null || firstRenderer < 0 || deltaTime <= 0f || !Finite(deltaTime)) return;
             float dt = Mathf.Min(deltaTime, .05f);
             Vector3 position = transform.position, forward = transform.forward;
+            if (!owned)
+            {
+                Renderer first = renderers[firstRenderer];
+                if (first == null || !SupportsClock(first.sharedMaterial)) return;
+                first.GetPropertyBlock(blocks[firstRenderer]);
+                Vector4 previousMotion = ReadVector(first.sharedMaterial, blocks[firstRenderer], MotionId);
+                phase = ReadRenderedPhase(first.sharedMaterial, blocks[firstRenderer], Time.time);
+                stroke = previousMotion.w >= .5f && Finite(previousMotion.y) ? Mathf.Clamp(previousMotion.y, .3f, 1.5f) : 1f;
+                turn = previousMotion.w >= .5f && Finite(previousMotion.z) ? Mathf.Clamp(previousMotion.z, -1f, 1f) : 0f;
+                previousPosition = position; previousForward = forward; speed = 0f; owned = true;
+                for (int i = 0; i < renderers.Length; i++)
+                {
+                    if (!deforming[i] || renderers[i] == null) continue;
+                    renderers[i].GetPropertyBlock(blocks[i]);
+                    phaseOffsets[i] = ReadRenderedPhase(renderers[i].sharedMaterial, blocks[i], Time.time) - phase;
+                }
+                // The ownership frame keeps the already-rendered shader phase;
+                // adaptation begins on the next tick without advancing that frame twice.
+                WriteMotion(new Vector4(phase, stroke, turn, 1f));
+                return;
+            }
             float distance = Vector3.Distance(position, previousPosition);
             // Teleports and level placement do not become a one-frame tail burst.
             float observedSpeed = distance < length * 3f ? distance / deltaTime : 0f;
@@ -198,17 +239,55 @@ namespace SwanUnderwater
             turn = Mathf.Lerp(turn, angular, response);
             float blend = Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(.05f, 1.8f, speed));
             phase = Mathf.Repeat(phase + dt * cadence * Mathf.Lerp(.75f, 1.55f, blend), Mathf.PI * 20f);
-            var motion = new Vector4(phase, Mathf.Lerp(.52f, 1.16f, blend), turn, 1f);
-            for (int i = 0; i < renderers.Length; i++)
-            {
-                if (renderers[i] == null) continue;
-                // Other owners may update tint/highlight. Preserve their properties.
-                renderers[i].GetPropertyBlock(blocks[i]);
-                blocks[i].SetVector(MotionId, motion);
-                renderers[i].SetPropertyBlock(blocks[i]);
-            }
+            stroke = Mathf.Lerp(stroke, Mathf.Lerp(.52f, 1.16f, blend), response);
+            WriteMotion(new Vector4(phase, stroke, turn, 1f));
             previousPosition = position;
             previousForward = forward;
         }
+
+        void WriteMotion(Vector4 motion)
+        {
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                if (!deforming[i] || renderers[i] == null) continue;
+                // Other owners may update tint/highlight. Preserve their properties.
+                renderers[i].GetPropertyBlock(blocks[i]);
+                Vector4 rendererMotion = motion; rendererMotion.x += phaseOffsets[i];
+                blocks[i].SetVector(MotionId, rendererMotion);
+                renderers[i].SetPropertyBlock(blocks[i]);
+            }
+        }
+
+        static bool SupportsClock(Material material) => material != null && material.HasProperty(BodyId) &&
+            material.HasProperty(MotionId) && material.HasProperty(FrequencyId);
+        static float ReadFrequency(Material material, MaterialPropertyBlock block)
+        {
+            float value = block.HasFloat(FrequencyId) ? block.GetFloat(FrequencyId) : material.GetFloat(FrequencyId);
+            return Finite(value) ? Mathf.Max(.3f, value) : OceanFishVisualProfile.ClownfishCadence;
+        }
+        static Vector4 ReadVector(Material material, MaterialPropertyBlock block, int id)
+            => block.HasVector(id) ? block.GetVector(id) : material.GetVector(id);
+        static float ReadRenderedPhase(Material material, MaterialPropertyBlock block, float timestamp)
+        {
+            Vector4 motion = ReadVector(material, block, MotionId);
+            float result;
+            if (motion.w >= 1.5f)
+            {
+                Vector4 clock = ReadVector(material, block, SchoolClockId);
+                result = motion.x + Mathf.Clamp(timestamp - clock.x, 0f, Mathf.Max(0f, clock.z)) * clock.y;
+            }
+            else if (motion.w >= .5f) result = motion.x;
+            else
+            {
+                float offset = block.HasFloat(PhaseId) ? block.GetFloat(PhaseId) : material.GetFloat(PhaseId);
+                result = timestamp * ReadFrequency(material, block) + offset;
+            }
+            return Finite(result) ? Mathf.Repeat(result, Mathf.PI * 20f) : 0f;
+        }
+        static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
+#if UNITY_EDITOR
+        public static float RenderedPhaseForValidation(Material material, MaterialPropertyBlock block, float timestamp)
+            => ReadRenderedPhase(material, block, timestamp);
+#endif
     }
 }

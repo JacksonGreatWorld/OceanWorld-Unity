@@ -64,7 +64,7 @@ namespace SwanUnderwater
             var item = new GameObject("Entry control text", typeof(RectTransform), typeof(Text));
             item.layer = OceanEntry.IntroLayer; item.transform.SetParent(parent, false);
             var value = item.GetComponent<Text>(); value.font = font; value.fontSize = size; value.material = material;
-            value.text = text; value.alignment = TextAnchor.MiddleCenter; value.raycastTarget = false;
+            OceanLanguage.Bind(value, text); value.alignment = TextAnchor.MiddleCenter; value.raycastTarget = false;
             value.horizontalOverflow = HorizontalWrapMode.Wrap; value.verticalOverflow = VerticalWrapMode.Truncate;
             value.color = new Color(.9f, .97f, 1f, 1f); value.rectTransform.anchoredPosition = position; value.rectTransform.sizeDelta = dimensions;
             return value;
@@ -75,11 +75,11 @@ namespace SwanUnderwater
             bool visible = entry != null && entry.CanOperatePlayback && OceanEntry.BlocksGameplay;
             if (root == null) return;
             root.SetActive(visible);
+            label.text = OceanLanguage.Text(entry != null && entry.SkipRequested ? "已请求跳过" : "跳过入场");
+            status.text = OceanLanguage.Text(entry != null && entry.IsReplay ? "入场重看 · 进度保留 · 结束回到菜单" :
+                entry != null && entry.SkipRequested ? "加载完成后安全进入 · 正在准备" : "指向后松手，再捏合 · 也可用控制器");
             if (!visible || hands == null || !hands.CanReadTrackedVisuals) { ResetPointers(); return; }
             button.interactable = !entry.SkipRequested;
-            label.text = entry.SkipRequested ? "已请求跳过" : "跳过入场";
-            status.text = entry.IsReplay ? "入场重看 · 进度保留 · 结束回到菜单" :
-                entry.SkipRequested ? "加载完成后安全进入 · 正在准备" : "指向后松手，再捏合 · 也可用控制器";
             for (int i = 0; i < 2; i++)
             {
                 bool fresh = hands.TryGetEntryHandPointer(i == 0 ? OceanHandSide.HandLeft : OceanHandSide.HandRight,

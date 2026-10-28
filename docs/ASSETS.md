@@ -25,3 +25,7 @@
 `BuildProfiles/first-20-player-content.json` 的 requiredResources 已移除不发布的旧 Environment / CoralColored / 透明气泡条目，仍要求安装后核实 DiverHands。该公开清单不替换原工程清单，也不声称独立于依赖即可直接构建。
 
 公开源码导出的资源检查与原发行 APK 的构建、头显运行、真实佩戴验收分别报告；不得把原 APK 的验收结果直接当成改用气泡纹理或恢复本地依赖之后的验证结果。
+
+## 已烘焙生物的可移植校验
+
+`Sources/MarineExpansion/*-native-admission.json` 是已完成资源准入记录的公开投影，保留87份实际输出的原始SHA256、模型、纹理、姿态和动画测量；本机目录、保护文件清单、下载原件清单与截图路径不公开。它们不是新的采样结果，也不包含原始下载归档。公开构建入口使用 `ValidatePublishedAssets()` 核对封存投影、完整输出清单和既有动画/纹理约束；重跑原始导入的开发入口仍要求自行准备原件，不用公开投影冒充完整下载验证。

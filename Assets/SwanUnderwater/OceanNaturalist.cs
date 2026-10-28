@@ -96,13 +96,29 @@ namespace SwanUnderwater
             {
                 var entry = OceanSpeciesCatalog.Get(species);
                 string summary = entry.Description.Length > 36 ? entry.Description.Substring(0, 36) + "…" : entry.Description;
-                feedback.TryShowExplorationMessage((fresh ? "新观察记录 · " : "生物观察 · ") + entry.Name +
-                    $"（{State.AvailableCount}/{OceanSpeciesCatalog.AvailableCount}）\n" + summary);
+                string noticeName = entry.Name, noticeDescription = entry.Description;
+                int discovered = State.AvailableCount, total = OceanSpeciesCatalog.AvailableCount;
+                feedback.TryShowLocalizedExplorationMessage((fresh ? "新观察记录 · " : "生物观察 · ") + noticeName +
+                    $"（{discovered}/{total}）\n" + summary,
+                    () => OceanLanguage.Format(fresh ? "新观察记录 · {0}（{1}/{2}）\n{3}" : "生物观察 · {0}（{1}/{2}）\n{3}",
+                        OceanLanguage.Text(noticeName), discovered, total, ObservationSummary(noticeDescription)));
                 if (fresh) { leaderboard.RecordDiscovery(species, campaign.State.Current.level); changed?.Invoke(); }
             }
             else if (!string.IsNullOrEmpty(Store.LastError)) Debug.LogWarning("[Naturalist] " + Store.LastError);
             nextNotice = Time.unscaledTimeAsDouble + 12;
             ResetObservation();
+        }
+        static string ObservationSummary(string rawDescription)
+        {
+            string text = OceanLanguage.Text(rawDescription);
+            int limit = OceanLanguage.IsEnglish ? 108 : 36;
+            if (text.Length <= limit) return text;
+            if (OceanLanguage.IsEnglish)
+            {
+                int space = text.LastIndexOf(' ', limit);
+                if (space >= limit / 2) limit = space;
+            }
+            return text.Substring(0, limit) + "…";
         }
         IEnumerator Configure(int token, int level)
         {

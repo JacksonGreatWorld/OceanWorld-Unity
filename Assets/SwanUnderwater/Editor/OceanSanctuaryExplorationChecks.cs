@@ -32,7 +32,10 @@ namespace SwanUnderwater.EditorTests
             CheckRoute(world,OceanCoralSanctuary.ExplorationRouteOffsets,hits,"main loop");
             CheckRoute(world,OceanCoralSanctuary.ExplorationShortcutOffsets,hits,"southern exit");
             Transform fish=world.ActiveEnvironmentRoot.Find("Free Swimming Fish");
-            Check(fish!=null&&fish.childCount==120,"existing 120-hero budget preserved");
+            // Match CreateFishSchool's population policy, not the legacy JSON count or
+            // ReefLife.heroResidents, which counts only fish assigned to reef pockets.
+            int heroBudget=OceanResidentDensityPolicy.HeroCount(world.ActiveEnvironment,ReefExperienceSettings.Load().heroFish);
+            Check(fish!=null&&fish.childCount==heroBudget,"profile hero budget preserved ("+heroBudget+")");
             var meadow=world.ActiveEnvironmentRoot.GetComponentInChildren<SeagrassMeadow>();
             var shells=world.ActiveEnvironmentRoot.GetComponentInChildren<SeabedShells>();
             Check(meadow!=null&&meadow.TuftCount<=SeagrassMeadow.MaximumTufts,"grass stays within its existing budget");

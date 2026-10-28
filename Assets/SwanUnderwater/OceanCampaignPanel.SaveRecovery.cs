@@ -28,11 +28,11 @@ namespace SwanUnderwater
         void RefreshSaveRecovery()
         {
             if (saveRecoveryBody == null) return;
-            saveRecoveryBody.text = saveRecoveryNotice ?? OceanSaveRecoveryCopy.Describe(saveRecoveryStatus, saveRecoverySucceeded);
+            saveRecoveryBody.text = saveRecoveryNotice != null ? L(saveRecoveryNotice) : L(OceanSaveRecoveryCopy.Describe(saveRecoveryStatus, saveRecoverySucceeded));
             targetsButton.id = saveRecoveryReadOnly ? "save_recovery" : "show_targets";
             if (!saveRecoveryReadOnly) return;
             SetEnabled(targetsButton, true);
-            menuProgress.text = saveRecoverySucceeded ? "存档已重新读取 · 本次保持只读\n查看读取结果与本关目标" : "存档暂时无法读取 · 重新读取\n本次只读，原文件保留";
+            menuProgress.text = L(saveRecoverySucceeded ? "存档已重新读取 · 本次保持只读\n查看读取结果与本关目标" : "存档暂时无法读取 · 重新读取\n本次只读，原文件保留");
         }
         void OpenTargetsOrSaveRecovery() => ShowPage(saveRecoveryReadOnly ? Page.SaveRecovery : Page.Targets);
         internal void SuspendPracticeForSaveReload() => tutorial?.Skip(false);
