@@ -213,6 +213,7 @@ namespace SwanUnderwater.Editor
             SwanUnderwater.EditorTests.ReefSegmentGeometryTests.RunAll();
             SwanUnderwater.EditorTests.ReefLodChecks.RunPolicyTests();
             SwanUnderwater.EditorTests.OceanReefShadowChecks.RunAll();
+            SwanUnderwater.EditorTests.OceanButterflyNearChecks.RunAll();
             SwanUnderwater.EditorTests.OceanSharkPatrolTests.RunAll();
             SwanUnderwater.EditorTests.OceanGuardianCompositionTests.RunAll();
             SwanUnderwater.EditorTests.HeadRelocationTests.RunAll();
@@ -239,6 +240,7 @@ namespace SwanUnderwater.Editor
             SwanUnderwater.EditorTests.OceanNaturalistIntegrationChecks.RunAll();
             SwanUnderwater.EditorTests.OceanMarketMaterialChecks.RunAll();
             OceanMarineExpansionBake.ValidatePublishedAssets();
+            SwanUnderwater.EditorTests.OceanMackerelVolumeBake.ValidatePublishedAssets();
             OceanButterflyFishBake.ValidatePublishedAssets();
             OceanMarineCompanionBake.ValidatePublishedAssets();
             SwanUnderwater.EditorTests.OceanResidentDensityTests.RunAll();
@@ -264,6 +266,7 @@ namespace SwanUnderwater.Editor
             SwanUnderwater.EditorTests.OceanCampaignBiomeTests.RunAll();
             SwanUnderwater.EditorTests.OceanMechanicRulesTests.RunAll();
             SwanUnderwater.EditorTests.OceanFirstTwentyActivityTests.RunAll();
+            SwanUnderwater.EditorTests.OceanTransientGateChecks.RunAll();
             SwanUnderwater.EditorTests.OceanActivityReadabilityChecks.RunAll();
             SwanUnderwater.EditorTests.OceanMenuClickFeedbackTests.RunAll();
             SwanUnderwater.EditorTests.OceanMechanicSceneTests.RunAll();

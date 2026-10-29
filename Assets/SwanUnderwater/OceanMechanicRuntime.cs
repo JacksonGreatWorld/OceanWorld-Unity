@@ -58,6 +58,7 @@ namespace SwanUnderwater
         readonly Material[] nodeMaterials = new Material[3];
         Material inactiveMaterial, successMaterial, warningMaterial;
         Light handLight;
+        OceanActivityGateEffect gateEffect;
         Vector3 spawn, previousHead, mobilePosition, stationCenter, stationForward = Vector3.forward, stationRight = Vector3.right;
         Vector3 initialCarryDirection;
         float planeZ, stationHeight, sectionStarted, nextCaption, eyeHeightAboveFloor;
@@ -91,8 +92,11 @@ namespace SwanUnderwater
             inactiveMaterial = MakeMaterial("Mission dormant", new Color(.13f, .22f, .27f));
             successMaterial = MakeMaterial("Mission safe", new Color(.18f, .85f, .39f));
             warningMaterial = MakeMaterial("Mission hazard", new Color(.94f, .28f, .31f));
-            Mesh primary = OceanMechanicEnvironment.MarkerMesh(Rules.Kind); ownedMeshes.Add(primary);
-            Mesh ring = OceanMechanicEnvironment.RingMesh(); ownedMeshes.Add(ring);
+            bool transientRing = Rules.Kind == OceanMechanicKind.RingRace && state.Definition.MechanicOptional;
+            Mesh primary = transientRing ? null : OceanMechanicEnvironment.MarkerMesh(Rules.Kind);
+            if (primary != null) ownedMeshes.Add(primary);
+            Mesh ring = transientRing ? null : OceanMechanicEnvironment.RingMesh();
+            if (ring != null) ownedMeshes.Add(ring);
             Mesh bin = null;
             if (Rules.Kind == OceanMechanicKind.Cleanup) { bin = OceanMechanicEnvironment.BinMesh(); ownedMeshes.Add(bin); }
             int count = Rules.Kind == OceanMechanicKind.RunePuzzle || Rules.Kind == OceanMechanicKind.Cleanup ||
@@ -113,6 +117,12 @@ namespace SwanUnderwater
                 // Keep the node label's owned transform through hide/resume instead.
                 labelRoots.Add((RectTransform)labels[i].transform.parent);
                 labelRoots[i].localPosition = new Vector3(0, -.46f, 0);
+            }
+            if (transientRing)
+            {
+                gateEffect = new OceanActivityGateEffect(station.transform);
+                nodes[0].GetComponent<MeshRenderer>().enabled = false;
+                labelRoots[0].gameObject.SetActive(false);
             }
             // Keep the instruction in the lower view band, below the world-anchored node
             // labels. Its old above-node position projected onto the existing gold HUD.
@@ -178,12 +188,14 @@ namespace SwanUnderwater
 
         public void TickGameplay(float dt, bool playing)
         {
-            if (Rules == null || boundRun == null || boundRun != state.Current || station == null) return;
+            if (Rules == null || boundRun == null || boundRun != state.Current || station == null)
+            { gateEffect?.Suspend(); SetGateLabelVisible(); return; }
             UpdateCaptionPose();
             bool active = playing && explorationAvailable && state.CanCollect && !state.MechanicComplete && hands != null &&
                 hands.CanReadTrackedVisuals && Finite(dt) && dt > 0 && dt <= .1f;
             if (!active)
             {
+                gateEffect?.Suspend(); SetGateLabelVisible();
                 if (wasPlaying) Suspend();
                 wasPlaying = false;
                 SetCaptionVisible(playing && (state.MechanicComplete || !explorationAvailable));
@@ -192,6 +204,7 @@ namespace SwanUnderwater
             if (!wasPlaying)
             {
                 Suspend(); wasPlaying = true; previousHead = view.transform.position; headBaseline = true;
+                TickGateEffect(dt, view.transform.position);
                 RefreshPresentation(true); return; // A resumed frame cannot spend pre-menu dt or a held pinch.
             }
             HandSample left = ReadHand(0), right = ReadHand(1);
@@ -240,6 +253,7 @@ namespace SwanUnderwater
             if (!left.valid) { pinchGates[0].Reset(); wasPinching[0] = false; }
             if (!right.valid) { pinchGates[1].Reset(); wasPinching[1] = false; }
             if (!left.valid && !right.valid) { Suspend(); return; }
+            TickGateEffect(dt, eye);
             state.UpdateMechanicElapsed(dt);
             float now = boundRun.mechanicElapsedSeconds;
             int frame = Time.frameCount;
@@ -296,6 +310,8 @@ namespace SwanUnderwater
             }
             if (Rules.Kind == OceanMechanicKind.RingRace)
             {
+                // Visibility is presentation only. An idle cue fading out must not
+                // invalidate the original tracked head crossing or trap a slow player.
                 input.Arrived = headBaseline && CrossedRing(previousHead, eye, nodes[0].transform.position,
                     state.Definition.MechanicOptional ? stationForward : Vector3.forward,
                     state.Definition.MechanicOptional ? .70f : .45f);
@@ -329,6 +345,7 @@ namespace SwanUnderwater
                 int eventId = 100000 + boundRun.mechanicProgress;
                 if (state.RecordMechanicProgress(eventId))
                 {
+                    gateEffect?.Crossed();
                     sectionStarted = now; ResetNodes();
                     NotifyHint(new HintCopy(state.Definition.MechanicOptional ?
                         state.MechanicComplete ? "可选支线完成 · 主目标与星级不受影响" : "支线节点完成 · 沿沙谷寻找下一个点" :
@@ -444,6 +461,12 @@ namespace SwanUnderwater
                 nodes[i].transform.localScale = Vector3.one;
             }
             if (Rules.Kind == OceanMechanicKind.RingRace) nodes[0].transform.localScale = Vector3.one * 1.6f;
+            if (gateEffect != null)
+            {
+                if (state.MechanicComplete) gateEffect.Suspend();
+                else gateEffect.Configure(nodes[0].transform.position, Quaternion.LookRotation(stationForward));
+                SetGateLabelVisible();
+            }
             if (Rules.Kind == OceanMechanicKind.Escort) nodes[0].transform.rotation = Quaternion.LookRotation(stationRight);
             if (Rules.Kind == OceanMechanicKind.Observation)
                 for (int i = 0; i < observationVisuals.Length; i++)
@@ -512,6 +535,7 @@ namespace SwanUnderwater
         }
         void Suspend()
         {
+            gateEffect?.Suspend(); SetGateLabelVisible();
             Rules?.Suspend();
             if (state?.Current == boundRun && Rules != null) state.SetMechanicStage(Rules.Stage);
             for (int i = 0; i < 2; i++) { pinchGates[i].Reset(); wasPinching[i] = false; }
@@ -549,8 +573,20 @@ namespace SwanUnderwater
                     material = i == preview ? successMaterial : inactiveMaterial;
                 }
                 renderer.sharedMaterial = material;
+                if (gateEffect != null) renderer.enabled = false;
                 labelRoots[i].rotation = view.transform.rotation;
             }
+        }
+        void TickGateEffect(float dt, Vector3 eye)
+        {
+            if (gateEffect == null) return;
+            gateEffect.Tick(dt, eye, explorationAvailable, state.MechanicComplete);
+            SetGateLabelVisible();
+        }
+        void SetGateLabelVisible()
+        {
+            if (gateEffect != null && labelRoots.Count > 0 && labelRoots[0] != null)
+                labelRoots[0].gameObject.SetActive(gateEffect.CueActive && gateEffect.Visible);
         }
         void RefreshLocalizedCopy()
         {
@@ -633,7 +669,7 @@ namespace SwanUnderwater
                 case OceanMechanicKind.CoralRepair: return new HintCopy(Rules.Stage == 0 ? "捏住活珊瑚枝，拖到右侧底座，再松开种植" : "保持捏合拖到右侧底座，松开完成修复");
                 case OceanMechanicKind.Cleanup: return new HintCopy("辨认塑料或金属，捏住垃圾拖到同类回收箱，再松开");
                 case OceanMechanicKind.TideGates: return new HintCopy(Rules.Stage == 0 ? "先捏合左侧潮汐开关" : "闸门绿色时，松手后捏合右侧闸门通过");
-                case OceanMechanicKind.RingRace: return new HintCopy("坐姿划水，头部穿过下一个气泡环；无需站起");
+                case OceanMechanicKind.RingRace: return new HintCopy("靠近前方气泡环，显现时划水穿过；穿过后气泡消散");
                 case OceanMechanicKind.RunePuzzle: return boundRun.mechanicElapsedSeconds - sectionStarted < 2.7f ? new HintCopy("记住三次发光顺序，随后依次捏合符文") : new HintCopy("按刚才顺序捏合三个符文 · 已输入 {0}/3", Rules.Stage);
                 case OceanMechanicKind.ElectricFinale: return new HintCopy(Rules.Stage == 0 ? "双手张开各指向一个电极，持续充能；随后对准核心" : "已充能 · 核心绿灯节拍时捏合发射");
                 default: return new HintCopy(state.Definition.MechanicHint);
@@ -684,6 +720,7 @@ namespace SwanUnderwater
         internal void ClearForUnavailableLevel() => Clear();
         void Clear()
         {
+            gateEffect?.Dispose(); gateEffect = null;
             if (station != null) { station.SetActive(false); Release(station); }
             station = carriedVisual = escortVisual = null; observationVisuals[0] = observationVisuals[1] = null;
             caption = null; captionCanvas = null; captionRoot = null; nodes.Clear(); labels.Clear(); labelRoots.Clear();
@@ -706,6 +743,7 @@ namespace SwanUnderwater
         }
 
 #if UNITY_EDITOR
+        public OceanActivityGateEffect GateEffectForValidation => gateEffect;
         public RectTransform CaptionRectForValidation => captionRoot;
         public bool ExplorationAvailableForValidation => explorationAvailable;
         public Vector3 ExplorationCenterForValidation => stationCenter;

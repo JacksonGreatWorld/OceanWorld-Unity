@@ -41,6 +41,10 @@ python3 Scripts/restore-local-dependencies.py   --pico-sdk '/path/to/authorized/
 
 恢复后再打开 Unity，确认 package resolution、两只手模型、PICO loader 与构建目标；按项目构建入口编译。通过源文件检查不表示构建或实机已验收。
 
-## 原始素材与构建来源验证
+## 已封存素材与重新制作
 
-`CodexBuild.BuildAndroid`还会核对海洋素材的原始许可metadata、canonical源包以及与现有Assets哈希对应的sealed admission receipts。此公开快照保留已获许可的运行素材与来源说明，但不附带原始ZIP归档或含本机路径的验证原件；上述依赖不能由SDK/手模型恢复脚本补齐。使用该构建入口前，需从来源说明恢复原始素材并完成同等来源验证，生成匹配的准入凭据。缺项会主动停止，不能删除验证或伪造receipt来宣称完整构建通过。私有VibeLab导出工作区中的既有来源验证材料不应进入导出的Gradle发布仓库。
+公开快照包含当前可再分发的运行素材、作者/许可说明及封存的公开准入凭据。构建入口验证公开凭据的固定SHA、输出名单、实际模型/材质/动画和署名；317的鲭鱼体积派生另保留18项原始输入的逐SHA检查，仅通过已封存的native公开投影桥接原始native receipt身份。
+
+恢复SDK与手模型不会替代上述验证，也不要删除校验或伪造receipt。直接使用本快照的封存输出无需携带私有原始ZIP或本机路径记录。若要从原始下载包重新烘焙、换模型或改输出，应从素材来源说明取得适用授权，重新执行完整来源/几何/动画准入；不能把修改后的输出当成原封存结果。
+
+当前验证范围见[验证说明](VALIDATION.md)。恢复依赖、Editor回归、Android构建、设备安装和真人佩戴是分别记录的状态。

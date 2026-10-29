@@ -10,6 +10,11 @@ namespace SwanUnderwater
         float phase, radius, clearance;
         float cruiseSpeed=.22f, orbitAngularSpeed=.22f, verticalSway=.055f, blockedRetarget;
         OceanFishMotion motion;
+        Animator[] nativeAnimators;
+        RuntimeAnimatorController[] nativeControllers;
+        float[] nativeBaseSpeeds, nativeAppliedSpeeds;
+        bool[] nativeSpeedOwned;
+        float nativeCadence = 1f;
         Transform ownedEnvironment;
         Camera playerView;
         HandSwimController playerHands;
@@ -46,12 +51,17 @@ namespace SwanUnderwater
         }
         public void Initialize(UnderwaterWorld owner, float length, float orbit, int seed, bool authoredAnimation = false)
         {
+            // A retry/rebind must return a previously borrowed playback speed before
+            // taking a new baseline. Never rebind the controller or animation time.
+            RestoreNativeCadence();
             world = owner; home = transform.position; radius = orbit; clearance = Mathf.Max(.12f, length * .18f);
             phase = seed * 1.37f;
             contextResolved=false;playerView=null;playerHands=null;campaign=null;
             avoidanceOffset=avoidanceTarget=Vector3.zero;avoidanceRemaining=avoidanceCooldown=proximityTimer=0f;
             ownedEnvironment=owner.ActiveEnvironmentRoot;
             CacheNearbySolids();
+            CacheNativeCadence(authoredAnimation);
+            motion = null;
             if (!authoredAnimation) motion = new OceanFishMotion(gameObject, length);
             else
             {
@@ -100,6 +110,7 @@ namespace SwanUnderwater
             Vector3 desired = home + OrbitOffset(phase) + avoidanceOffset;
             // Both procedural and authored residents turn before moving. The animation
             // stays on its original visual child; the navigation wrapper owns the heading.
+            Vector3 before = transform.position;
             Vector3 next=SteerForward(transform.position,transform.rotation,desired,dt,cruiseSpeed,out Quaternion heading);
             transform.rotation=heading;
             bool clear=IsClear(next);
@@ -111,7 +122,76 @@ namespace SwanUnderwater
                 phase+=Mathf.PI*.65f;blockedRetarget=.75f;
             }
             motion?.Tick(dt);
+            TickNativeCadence(before, elapsed, dt);
         }
+        void CacheNativeCadence(bool authored)
+        {
+            nativeAnimators = authored ? GetComponentsInChildren<Animator>(true) : null;
+            int count = nativeAnimators == null ? 0 : nativeAnimators.Length;
+            nativeControllers = count > 0 ? new RuntimeAnimatorController[count] : null;
+            nativeBaseSpeeds = count > 0 ? new float[count] : null;
+            nativeAppliedSpeeds = count > 0 ? new float[count] : null;
+            nativeSpeedOwned = count > 0 ? new bool[count] : null;
+            AcquireNativeCadence();
+        }
+        void AcquireNativeCadence()
+        {
+            RestoreNativeCadence();
+            if (nativeAnimators == null) return;
+            for (int i = 0; i < nativeAnimators.Length; i++)
+            {
+                Animator animator = nativeAnimators[i];
+                if (animator == null || !animator.enabled || animator.runtimeAnimatorController == null ||
+                    !Finite(animator.speed) || animator.speed < 0f) continue;
+                nativeControllers[i] = animator.runtimeAnimatorController;
+                nativeBaseSpeeds[i] = nativeAppliedSpeeds[i] = animator.speed;
+                nativeSpeedOwned[i] = true;
+            }
+        }
+        void TickNativeCadence(Vector3 before, float elapsed, float dt)
+        {
+            if (nativeAnimators == null) return;
+            float distance = Vector3.Distance(before, transform.position);
+            if (!Finite(distance)) return;
+            // Use the translation that actually passed clearance, not the wanted
+            // orbit speed. During a turn or a blocked step the authored swimmer
+            // keeps a gentle positive stroke; successful travel restores its base.
+            float relativeSpeed = Mathf.Clamp01(distance / elapsed / Mathf.Max(.06f, cruiseSpeed));
+            float target = Mathf.Lerp(.42f, 1f, Mathf.SmoothStep(0f, 1f, relativeSpeed));
+            nativeCadence = Mathf.Lerp(nativeCadence, target, 1f - Mathf.Exp(-dt * 4f));
+            for (int i = 0; i < nativeAnimators.Length; i++)
+            {
+                Animator animator = nativeAnimators[i];
+                if (!nativeSpeedOwned[i] || animator == null) continue;
+                if (!animator.enabled || animator.runtimeAnimatorController != nativeControllers[i] ||
+                    !Mathf.Approximately(animator.speed, nativeAppliedSpeeds[i]))
+                {
+                    // An explicit speed/controller writer takes precedence until a
+                    // new enable/initialization boundary grants ownership again.
+                    ReleaseNativeSpeed(i);
+                    continue;
+                }
+                nativeAppliedSpeeds[i] = nativeBaseSpeeds[i] * nativeCadence;
+                animator.speed = nativeAppliedSpeeds[i];
+            }
+        }
+        void ReleaseNativeSpeed(int index)
+        {
+            if (nativeSpeedOwned == null || !nativeSpeedOwned[index]) return;
+            Animator animator = nativeAnimators[index];
+            if (animator != null && animator.runtimeAnimatorController == nativeControllers[index] &&
+                Mathf.Approximately(animator.speed, nativeAppliedSpeeds[index]))
+                animator.speed = nativeBaseSpeeds[index];
+            nativeSpeedOwned[index] = false;
+        }
+        void RestoreNativeCadence()
+        {
+            if (nativeSpeedOwned != null)
+                for (int i = 0; i < nativeSpeedOwned.Length; i++) ReleaseNativeSpeed(i);
+            nativeCadence = 1f;
+        }
+        void OnEnable() => AcquireNativeCadence();
+        void OnDestroy() => RestoreNativeCadence();
         void ResolvePlayerContext()
         {
             if(contextResolved)return;
@@ -168,6 +248,7 @@ namespace SwanUnderwater
         }
         void OnDisable()
         {
+            RestoreNativeCadence();
             avoidanceOffset=avoidanceTarget=Vector3.zero;avoidanceRemaining=proximityTimer=0f;
             avoidanceCooldown=Mathf.Max(avoidanceCooldown,.75f);
         }

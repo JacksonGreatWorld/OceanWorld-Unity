@@ -56,6 +56,7 @@ namespace SwanUnderwater
             entries["历史进度已保留 · 请选择开放关卡"] = "Earlier progress kept · Choose an available level";
             entries["历史进度已保留，请选择开放关卡"] = "Earlier progress kept. Choose an available level.";
             entries["发现后解锁生物说明和近距离模型。"] = "Discover it to unlock its story and model.";
+            entries["发现后解锁生物说明。"] = "Discover it to unlock its story.";
             entries["取消"] = "Cancel";
             entries["可选{0} · 贝壳{1}种 / 鱼{2}种 · {3}"] = "Optional: {0} · Shells {1} / Fish {2} · {3}";
             entries["可选支线"] = "Optional activity";

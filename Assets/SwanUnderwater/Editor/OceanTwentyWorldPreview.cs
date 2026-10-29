@@ -109,9 +109,72 @@ namespace SwanUnderwater.Editor
             }
             catch (Exception e) { Finish(false, e.ToString()); }
         }
+        static void CaptureTransientGateInWorld(UnderwaterWorld world, Camera sceneCamera)
+        {
+            var fixture = new GameObject("Isolated transient gate in actual reef");
+            OceanMechanicRuntime runtime = null;
+            try
+            {
+                var lens = new GameObject("Synthetic activity capture camera").AddComponent<Camera>();
+                lens.transform.SetParent(fixture.transform,false); lens.CopyFrom(sceneCamera); lens.enabled=false;
+                lens.stereoTargetEye=StereoTargetEyeMask.None; lens.GetUniversalAdditionalCameraData().allowXRRendering=false;
+                Vector3 eye=world.ActiveSpawn;
+                eye.y=UnderwaterWorld.SampleRenderedSeabedHeight(eye.x,eye.z,world.ActiveEnvironment)+1.6f;
+                lens.transform.position=eye;
+                var fixtureState=new OceanCampaignState(); fixtureState.StartLevel(6);
+                runtime=fixture.AddComponent<OceanMechanicRuntime>(); runtime.Initialize(world,lens,null,fixtureState,null);
+                runtime.ConfigureLevel(world.ActiveSpawn);
+                Require(runtime.ExplorationAvailableForValidation&&runtime.GateEffectForValidation!=null,"actual clear reef gate fixture");
+                int sampleFrame=9200000;
+                Action<int> sample=count=>
+                {
+                    for(int i=0;i<count;i++)runtime.StepSceneTest(.05f,sampleFrame++,new Ray(lens.transform.position,lens.transform.forward),
+                        0,true,default,0,false,lens.transform.position,lens.transform.forward);
+                };
+                Vector3 center=runtime.NodePosition(0),normal=runtime.StationRoot.GetChild(0).forward;
+                lens.transform.SetPositionAndRotation(center-normal*2.2f,Quaternion.LookRotation(normal));
+                Save(lens,"gate-world-before-activity");sample(20);
+                Require(runtime.GateEffectForValidation.Visible,"actual reef shows the approached cue");
+                Save(lens,"gate-world-approach");
+                if(Array.IndexOf(Environment.GetCommandLineArgs(),"-codexGateWorldAnimation")>=0)
+                {
+                    // Fixed scene/time and camera: advance only the explicitly owned
+                    // cue clock. This is a controlled VFX preview, never device footage.
+                    for(int frame=0;frame<40;frame++)
+                    { if(frame>0)sample(1); Save(lens,"gate-world-motion-"+frame.ToString("D3")); }
+                }
+                for(int pass=0;pass<3;pass++)
+                {
+                    center=runtime.NodePosition(0);normal=runtime.StationRoot.GetChild(0).forward;
+                    lens.transform.SetPositionAndRotation(center-normal*.15f,Quaternion.LookRotation(normal));sample(12);
+                    lens.transform.position=center+normal*.15f;sample(1);
+                    Require(fixtureState.Current.mechanicProgress==pass+1,"actual reef crossing records exactly one stage");
+                }
+                lens.transform.SetPositionAndRotation(center-normal*2.2f,Quaternion.LookRotation(normal));
+                Require(fixtureState.MechanicComplete&&!runtime.GateEffectForValidation.Visible&&
+                    !runtime.NodeLabelRectForValidation(0).gameObject.activeInHierarchy,"actual reef has no final circle or label");
+                Require(runtime.GetComponentsInChildren<Collider>(true).Length==0,"gate effect adds no physical reef obstacle");
+                Save(lens,"gate-world-after-complete");
+            }
+            finally
+            {
+                // Fixture teardown must be deterministic even outside normal component callbacks.
+                if(runtime!=null)typeof(OceanMechanicRuntime).GetMethod("OnDestroy",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(runtime,null);
+                Object.DestroyImmediate(fixture);
+            }
+        }
         static IEnumerator Exercise(TreasureHunt hunt, Camera camera)
         {
             OceanCampaignController campaign = hunt.Campaign; OceanCampaignState state = campaign.State;
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-codexNativeCadenceOnly") >= 0)
+            {
+                campaign.Panel.SkipTutorialForValidation();
+                var cadenceWorld = Object.FindFirstObjectByType<UnderwaterWorld>();
+                EditorTests.OceanNativeSwimCadenceChecks.RunInScene(cadenceWorld);
+                yield return EditorTests.OceanButterflyNearChecks.RunLifecycleInPlayMode();
+                Finish(true, "Three native Animators and production navigation cadence/lifecycle passed; isolated Editor only, no wearer or device performance claim.");
+                yield break;
+            }
             bool disabledRankings = Array.IndexOf(Environment.GetCommandLineArgs(), "-codexLeaderboardDisabled") >= 0;
             if (disabledRankings) EditorTests.OceanLeaderboardDisabledChecks.CheckInScene(campaign, "entry");
             if(Array.IndexOf(Environment.GetCommandLineArgs(),"-codexTutorialClose")>=0)
@@ -476,7 +539,7 @@ namespace SwanUnderwater.Editor
                         campaign.Mechanics.Rules.Kind==state.Definition.Mechanic&&state.Definition.MechanicOptional,
                         "production campaign binds the correct optional activity "+level);
                     Require(campaign.Mechanics.StationRoot.GetChild(0).gameObject.activeSelf,
-                        "optional activity has a reachable visible station "+level);
+                        "optional activity has a reachable logical station "+level);
                     Require(state.Current.mechanicProgress==0&&!state.GoalComplete,
                         "opening a new station cannot fabricate player progress "+level);
                     Save(camera,"activity-"+level+"-entry");
@@ -493,7 +556,11 @@ namespace SwanUnderwater.Editor
                         Save(lens,"activity-"+level+"-station");
                     }
                     finally { Object.Destroy(photo); }
-                    if (level==6) EditorTests.OceanFirstTwentyActivityTests.RunInScene(world);
+                    if (level==6)
+                    {
+                        EditorTests.OceanFirstTwentyActivityTests.RunInScene(world);
+                        CaptureTransientGateInWorld(world,camera);
+                    }
                 }
                 Finish(true,"Five real campaign configurations and native models captured; synthetic hand/route/lifecycle checks in the actual sanctuary. Isolated Editor saves only; wearer, stereo and device performance remain unverified.");
                 yield break;
@@ -567,7 +634,7 @@ namespace SwanUnderwater.Editor
                         if(tag.Species==28)
                         {
                             Require(tag.GetComponentInChildren<SkinnedMeshRenderer>()==null,"static butterfly not mislabeled as authored rig");
-                            Require(tag.GetComponent<Renderer>().sharedMaterial.shader.name=="SwanUnderwater/ButterflyFishSwim","butterfly original-fin shader preserved");
+                            Require(tag.GetComponent<Renderer>().sharedMaterial.shader.name==OceanMarineMaterialLibrary.ButterflyNearShader,"runtime butterfly uses the shared fin-preserving near-lighting variant");
                         }
                         else
                         {
@@ -575,9 +642,15 @@ namespace SwanUnderwater.Editor
                             Require(skin!=null&&animator!=null&&animator.isActiveAndEnabled&&animator.runtimeAnimatorController!=null,
                                 "actual native skin and Animator active");
                             Require(Vector3.Distance(skin.bounds.center,tag.transform.position)<3,"native renderer bounds remain near navigation body");
+                            if(tag.Species==27)
+                                Require(skin.sharedMesh==Resources.Load<GameObject>(OceanSpeciesCatalog.Get(27).ResourcePath).GetComponentInChildren<SkinnedMeshRenderer>(true).sharedMesh,
+                                    "actual mackerel residents use the admitted body-volume derivative");
                         }
                     }
                     Require(butterfly==14&&mackerel==10&&turtle==1&&dolphin==2,"actual resource counts 14 butterfly,10 mackerel,1 turtle,2 dolphin");
+                    var marineMaterials = world.GetComponent<OceanMarineMaterialLibrary>();
+                    Require(marineMaterials != null && marineMaterials.OwnedMaterialCount == 1,
+                        "fourteen runtime butterflies share exactly one world-owned near material across levels");
                     if(level==6)
                     {
                         for(int z=0;z<OceanCoralSanctuary.ExplorationZones.Count;z++)
@@ -587,7 +660,7 @@ namespace SwanUnderwater.Editor
                             eye.y=UnderwaterWorld.SampleRenderedSeabedHeight(eye.x,eye.z)+1.6f;
                             yield return ArtView(camera,eye,eye+new Vector3(1,.7f,13),"diversity-zone-"+z,world);
                         }
-                        foreach(int id in new[]{28,29,30})
+                        foreach(int id in new[]{27,28,29,30})
                         {
                             OceanNaturalistTag selected=null;
                             foreach(var tag in world.ActiveEnvironmentRoot.GetComponentsInChildren<OceanNaturalistTag>())if(tag.Species==id){selected=tag;break;}

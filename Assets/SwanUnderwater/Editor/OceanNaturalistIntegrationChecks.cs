@@ -71,7 +71,7 @@ namespace SwanUnderwater.EditorTests
                     continue;
                 }
                 else if (id >= 27)
-                    Check(entry.ResourcePath == new[] { "MarineExpansion/mackerel", "MarineExpansion/butterfly-fish", "MarineExpansion/sea-turtle", "MarineExpansion/dolphin" }[id - 27], "appended marine animal points to admitted source bake");
+                    Check(entry.ResourcePath == new[] { "MarineExpansion/mackerel-volume", "MarineExpansion/butterfly-fish", "MarineExpansion/sea-turtle", "MarineExpansion/dolphin" }[id - 27], "appended marine animal points to admitted source or volume derivative bake");
                 else
                     Check(entry.ResourcePath == (id == 25 ? "RealisticReef/market_coral_platygyra_lod0" : "RealisticReef/market_fan_coral_lod0"),
                         "new coral identities point to admitted market bake products: " + id);

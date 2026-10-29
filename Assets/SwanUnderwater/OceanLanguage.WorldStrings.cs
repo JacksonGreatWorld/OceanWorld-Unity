@@ -160,6 +160,7 @@ namespace SwanUnderwater
             entries["先捏合左侧潮汐开关"] = "First pinch the tide switch on the left";
             entries["闸门绿色时，松手后捏合右侧闸门通过"] = "When the gate turns green, release and pinch the gate on the right to pass.";
             entries["坐姿划水，头部穿过下一个气泡环；无需站起"] = "Paddle while seated. Swim your head through the next bubble ring. No need to stand.";
+            entries["靠近前方气泡环，显现时划水穿过；穿过后气泡消散"] = "Approach the bubble ring and paddle through while it appears. The bubbles dissolve after you pass.";
             entries["记住三次发光顺序，随后依次捏合符文"] = "Remember the three flashes, then pinch the runes in that order";
             entries["按刚才顺序捏合三个符文 · 已输入 {0}/3"] = "Pinch the three runes in the same order · Entered {0}/3";
             entries["双手张开各指向一个电极，持续充能；随后对准核心"] = "Point one open hand at each electrode. Hold to charge, then aim at the core.";

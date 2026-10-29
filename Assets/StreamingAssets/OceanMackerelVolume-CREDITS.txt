@@ -1,0 +1,15 @@
+Atlantic Mackerel body-volume derivative — OceanWorld 2.9.22
+Based on Atlantic Mackerel (Animated and Game-ready) by Ishxxn (@1shxxn).
+Source: https://sketchfab.com/3d-models/atlantic-mackerel-animated-and-game-ready-eca6071c26fc4013b8c94a3f37a434c7
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+License URL: https://creativecommons.org/licenses/by/4.0/
+
+Body-volume derivative (OceanWorld 2.9.22): expanded only the bind-space lateral
+body surface with a smooth mask, preserving the thin-fin midplane and tail tip.
+Recomputed normals/tangents for that deformation; retained original topology,
+UVs, texture maps, skin weights, bind poses, controller and animation curves.
+The original assets remain unchanged. This is an artistic game adaptation,
+not a measured anatomical reconstruction or endorsement by the original author.
+
+Original color/normal processing and full original attribution are described in
+MarineExpansion-CREDITS.txt, retained without alteration alongside this notice.

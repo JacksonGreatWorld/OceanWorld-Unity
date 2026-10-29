@@ -1,0 +1,120 @@
+{
+    "schemaVersion": 1,
+    "vertices": 3354,
+    "triangles": 5986,
+    "poseSamples": 61,
+    "unchangedFinOrTailVertices": 1745,
+    "assertions": 1811,
+    "success": true,
+    "policy": "bind-y-volume-v1: 1+1.4*smooth(.12,.35,u)*(1-.65*smooth(.87,1,u))*smooth(.003,.013,abs(y)); head=+x; preserve x/z, near-plane fins and tail; inverse-transpose normals; original rig/maps/UV",
+    "unity": "6000.0.84f1",
+    "utc": "2026-10-28T13:48:07.7283550Z",
+    "sourceUrl": "https://sketchfab.com/3d-models/atlantic-mackerel-animated-and-game-ready-eca6071c26fc4013b8c94a3f37a434c7",
+    "author": "Ishxxn (@1shxxn)",
+    "license": "CC-BY-4.0",
+    "limitations": "Art-directed volume correction, not measured biological anatomy. Same topology/rig and maps; Editor evidence does not establish headset acceptance.",
+    "inputs": [
+        {
+            "path": "Assets/ArtSources/MarineExpansion/mackerel/Mackerel_6_try4.fbx",
+            "sha256": "8b1c7668a55bb73c5d40aa3450d8b1374165a33addb315db820748610ec26126"
+        },
+        {
+            "path": "Assets/ArtSources/MarineExpansion/mackerel/Mackerel_6_try4.fbx.meta",
+            "sha256": "0fdf784bbea8c53eb5f1c869115d800b91bb9de16c5328df2ab1c12407898b6e"
+        },
+        {
+            "path": "Assets/ArtSources/MarineExpansion/mackerel/mackerel_sideview.png",
+            "sha256": "e14db4c944a1236130bddf88703227b398858e3d95c9e4b4741ca1adc4c25f91"
+        },
+        {
+            "path": "Assets/ArtSources/MarineExpansion/mackerel/mackerel_sideview.png.meta",
+            "sha256": "c8c39978c8ac4aa381b0c6c9e5a0eede7a338ee272c6f5c811bf3157d8601a63"
+        },
+        {
+            "path": "Assets/ArtSources/MarineExpansion/mackerel/mackerel_sideview_normal.png",
+            "sha256": "c29fcd1027fa095cfd890e26655cc54a7368105ea654ff87de56b475712e1d70"
+        },
+        {
+            "path": "Assets/ArtSources/MarineExpansion/mackerel/mackerel_sideview_normal.png.meta",
+            "sha256": "3e3ad43da7b79d7623560f80bbf4860952d47eb6d2c1b738af324dc32ebfcad4"
+        },
+        {
+            "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel-swim.controller",
+            "sha256": "9ffb1e8df7f9b58f335ee78fddf16b25a91a48574e1c09c50016f41057b300fd"
+        },
+        {
+            "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel-swim.controller.meta",
+            "sha256": "e903f70123c3a17d1a33cb7c69737ecd00dc25c9633c8ce2ddcc72c9981c2345"
+        },
+        {
+            "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel-urp.mat",
+            "sha256": "a94324d9386c3fc7dd715fe6a01c2be58a25b2719231c1c0af942c0af52d2073"
+        },
+        {
+            "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel-urp.mat.meta",
+            "sha256": "4bca34c20a3bda7c86dbdee5e685abae2c5d28b41049075bdc29f5dfde8e4c01"
+        },
+        {
+            "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel_basecolor_astc.asset",
+            "sha256": "2f5f19b696124d5dddb3c2f55570cdd93ce6023caca96c0ff152ef034ecdac7b"
+        },
+        {
+            "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel_basecolor_astc.asset.meta",
+            "sha256": "47334475c89a7e9fb6e92ada5b366b90c0faf592b1df0ef23c7710b340b8437a"
+        },
+        {
+            "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel_normal_lossless.asset",
+            "sha256": "6c213b6e3e206e637bd9535c5ccdb254015899c0a26dee81f9693c884a3cb82f"
+        },
+        {
+            "path": "Assets/ArtBaked/MarineExpansion/mackerel/mackerel_normal_lossless.asset.meta",
+            "sha256": "061525c55b5aa269c60163dd503835a2053ecb742f56b88d10ae18085b39c204"
+        },
+        {
+            "path": "Assets/Resources/MarineExpansion/mackerel.prefab",
+            "sha256": "9745f300362822bdd4cfadbaf24ba49695274db99ca7d01f0e81bbcfb227acb1"
+        },
+        {
+            "path": "Assets/Resources/MarineExpansion/mackerel.prefab.meta",
+            "sha256": "8c436107b55ce1d4bf709e99e9a72c0819a3c6bd3a959f3fa58cda5afb0ffe71"
+        },
+        {
+            "path": "Assets/Resources/MarineExpansion/mackerel-geometry.json",
+            "sha256": "93520c45293b1feac978fe59120d3015186bfb9e740b15a016b39e2d92082d49"
+        },
+        {
+            "path": "Assets/Resources/MarineExpansion/mackerel-geometry.json.meta",
+            "sha256": "959088d409018a1714fd39c28a0240e8ed590669d66a4c90b1263099a2f6661a"
+        },
+        {
+            "path": "Sources/MarineExpansion/mackerel-native-admission.json",
+            "sha256": "04354d82616c5200a25b3f02a91f7130547804dec778a760b9c1fdf8c5b04172"
+        }
+    ],
+    "outputs": [
+        {
+            "path": "Assets/ArtBaked/MarineExpansion/mackerel-volume/mackerel-volume.asset",
+            "sha256": "b3844c9655bfe1c604f0a86ef4ff0080894bda119817baac97fa06b579286ff2"
+        },
+        {
+            "path": "Assets/ArtBaked/MarineExpansion/mackerel-volume/mackerel-volume.asset.meta",
+            "sha256": "0c62a30c7db447468603c20e5a5128f2dbc9beee33a9df26b7494a2a21cbe9b3"
+        },
+        {
+            "path": "Assets/Resources/MarineExpansion/mackerel-volume.prefab",
+            "sha256": "7747e5bd0050372b2a425b0fc0a75adb5e7cadc369bae4fc2c9d5a60946d06f0"
+        },
+        {
+            "path": "Assets/Resources/MarineExpansion/mackerel-volume.prefab.meta",
+            "sha256": "7a1d6dbf4838f14bed21671a25c98a81eab8fbe4b4c73bb0d14a75b472403ad2"
+        },
+        {
+            "path": "Assets/Resources/MarineExpansion/mackerel-volume-geometry.json",
+            "sha256": "568798f41a368c1dd78c8c256ac63024f01d7dd06282c7b09f597673dc600780"
+        },
+        {
+            "path": "Assets/Resources/MarineExpansion/mackerel-volume-geometry.json.meta",
+            "sha256": "d8f245d743c610df62cef2f96922fc9681e3ef2d1a471d3ed4b41c05ec6036d3"
+        }
+    ]
+}

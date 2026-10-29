@@ -134,7 +134,7 @@ namespace SwanUnderwater.Editor
 
         static void CheckNativeAnimationIsolation()
         {
-            foreach (string species in new[] { "mackerel", "sea-turtle", "dolphin" })
+            foreach (string species in new[] { "mackerel", "mackerel-volume", "sea-turtle", "dolphin" })
             {
                 GameObject prefab = Resources.Load<GameObject>("MarineExpansion/" + species);
                 Require(prefab != null, "Native admitted animated species exists: " + species);

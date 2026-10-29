@@ -1,5 +1,5 @@
 {
-  "scope": "README presentation assets only; brand concept art and explicitly labeled early gameplay. Not packaged into the application or a new APK release.",
+  "scope": "README assets only: labeled concept art, early recording, and current controlled Editor VFX. Not packaged into the application or a new APK release.",
   "files": [
     {
       "path": "images/ocean-world-poster.jpg",
@@ -21,6 +21,22 @@
       "source": "2026-10-11留存的Unity-original-20s.mp4；720p H.264静音副本，去除音轨及元数据，非当前审核包验收。",
       "bytes": 3650423,
       "sha256": "40c3d6a99d87d65895fed825c38d9c0b5d3acc80c3e170f1370ffc36ea832a58"
+    },
+    {
+      "path": "images/ripple-gate-2.9.24.png",
+      "sha256": "c578a12a839e3ac0d917dc4fc6de6ef8516a6dd6d1af3b339ba1f6bbaf9173d9",
+      "bytes": 1300591,
+      "kind": "Controlled Unity Editor reef VFX still",
+      "capture": "Fixed scene/camera, only cue clock advanced at .05s samples. Not headset recording or deviceFPS.",
+      "source": "Fixed scene/camera, only cue clock advanced at .05s samples. Not headset recording or deviceFPS."
+    },
+    {
+      "path": "videos/ripple-gate-2.9.24.mp4",
+      "sha256": "04e9130fbd8d083bfe3197aad35d4144b44c3a509ed587f586a64f0b829e1b33",
+      "bytes": 591646,
+      "kind": "Controlled Unity Editor water ripple animation",
+      "capture": "Fixed scene/camera, only cue clock advanced at .05s samples. Not headset recording or deviceFPS.",
+      "source": "Fixed scene/camera, only cue clock advanced at .05s samples. Not headset recording or deviceFPS."
     }
   ]
 }

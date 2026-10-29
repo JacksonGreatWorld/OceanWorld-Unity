@@ -24,7 +24,7 @@ namespace SwanUnderwater.EditorTests
             {
                 foreach(string resource in new[]{"mackerel","sea-turtle","dolphin"})
                 {
-                    string path="MarineExpansion/"+resource;
+                    string path=resource=="mackerel"?OceanSpeciesCatalog.Get(27).ResourcePath:"MarineExpansion/"+resource;
                     GameObject prefab=Resources.Load<GameObject>(path);var json=Resources.Load<TextAsset>(path+"-geometry");
                     Check(prefab!=null&&json!=null,"actual admitted native source and geometry: "+resource);
                     var profile=JsonUtility.FromJson<OceanAuthoredFishGeometry>(json.text);

@@ -520,6 +520,18 @@
     {
       "key": "Treasure/TreasureFont",
       "source": "Assets/Resources/Treasure/TreasureFont.otf"
+    },
+    {
+      "key": "MarineExpansion/mackerel-volume",
+      "source": "Assets/Resources/MarineExpansion/mackerel-volume.prefab"
+    },
+    {
+      "key": "MarineExpansion/mackerel-volume-geometry",
+      "source": "Assets/Resources/MarineExpansion/mackerel-volume-geometry.json"
+    },
+    {
+      "key": "Shaders/ButterflyFishNear",
+      "source": "Assets/Resources/Shaders/ButterflyFishNear.shader"
     }
   ],
   "retainedAttributionFiles": [
@@ -558,6 +570,10 @@
     {
       "path": "Assets/Resources/Leaderboard/SOURCE.md",
       "sha256": "caca3bfca6e58b0fbf46c7e7ebbe15dc687d0919e60f576cd6b12bfb638c5bba"
+    },
+    {
+      "path": "Assets/StreamingAssets/OceanMackerelVolume-CREDITS.txt",
+      "sha256": "a5534c9aa48c62cc72b49449ec10d8c57ce57f58d71f54fe55fc339fe0f0c357"
     }
   ],
   "publicExport": {

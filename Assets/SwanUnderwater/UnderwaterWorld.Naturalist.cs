@@ -89,6 +89,7 @@ namespace SwanUnderwater
                         if(geometry==null||!geometry.IsValid)throw new InvalidOperationException("Butterfly geometry admission missing.");
                         navigation=geometry.NavigationBounds;
                         model.transform.localScale*=plan.bodyDiagonal/geometry.firstPoseDiagonal;
+                        OceanMarineMaterialLibrary.For(gameObject).ApplyButterflyNear(model);
                     }
                     else
                     {

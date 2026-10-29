@@ -43,7 +43,7 @@ namespace SwanUnderwater.EditorTests
             Check(resident != null, "an active appended mackerel group member is present");
             Check(resident.transform.IsChildOf(world.ActiveEnvironmentRoot) && resident.GetComponent<OceanWildlifeResident>() != null,
                 "world owns the resident and its navigation wrapper");
-            Check(OceanSpeciesCatalog.Get(27).ResourcePath == "MarineExpansion/mackerel" && OceanSpeciesCatalog.Get(27).FirstLevel == 6,
+            Check(OceanSpeciesCatalog.Get(27).ResourcePath == "MarineExpansion/mackerel-volume" && OceanSpeciesCatalog.Get(27).FirstLevel == 6,
                 "appended ID and availability remain explicit");
             var skins = resident.GetComponentsInChildren<SkinnedMeshRenderer>(true);
             Check(skins.Length == 1, "one original skinned renderer, not a rigid replacement");

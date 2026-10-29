@@ -55,7 +55,8 @@ namespace SwanUnderwater.EditorTests
             public void Cross()
             {
                 Vector3 center = runtime.NodePosition(0), forward = runtime.StationRoot.GetChild(0).forward;
-                camera.transform.position = center - forward * .15f; Point(-1, 0, 2);
+                // The previous gate dissolves at its old pose before the next cue appears.
+                camera.transform.position = center - forward * .15f; Point(-1, 0, 12);
                 camera.transform.position = center + forward * .15f; Point(-1, 0);
             }
             public void Dispose() => UnityEngine.Object.DestroyImmediate(root);
@@ -122,8 +123,11 @@ namespace SwanUnderwater.EditorTests
             float floor = UnderwaterWorld.SampleRenderedSeabedHeight(center.x, center.z, world.ActiveEnvironment);
             Check(center.y - floor >= 1.25f && center.y - floor <= 3.35f, "station is above the real rendered floor within seated swim reach");
             Check(runtime.GetComponentsInChildren<Collider>(true).Length == 0, "real activity adds no physical obstacle");
-            foreach (var label in runtime.CaptionRectForValidation.GetComponentsInChildren<UnityEngine.UI.Text>(true))
-                Check(label.text.Contains("可选支线") || scene.state.MechanicComplete, "real instruction explicitly marks optional activity");
+            var instructions = runtime.CaptionRectForValidation.GetComponentsInChildren<UnityEngine.UI.Text>(true);
+            Check(instructions.Length > 0, "real station retains its owned instruction text");
+            foreach (var label in instructions)
+                Check(label.text.Contains(OceanLanguage.Text(" · 可选支线")) || scene.state.MechanicComplete,
+                    "real instruction explicitly marks optional activity in the current locale: " + label.text);
             for (int i = 0; i < runtime.VisibleNodeCount; i++)
                 Check(!Physics.CheckSphere(runtime.NodePosition(i), .32f, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore),
                     "real interaction node is outside non-trigger reef collisions " + i);

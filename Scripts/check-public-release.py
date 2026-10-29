@@ -38,7 +38,7 @@ ROOT_TEXT_NAMES = {".gitignore", ".gitattributes", ".editorconfig"}
 ROOT_DOC = re.compile(r"^(?:readme(?:[._-].*)?|licen[cs]e(?:[._-].*)?|notice(?:[._-].*)?|third[_-]party.*|asset[_-]sources.*)$", re.I)
 LICENSE_DOC = re.compile(r"(?:licen[cs]e|notice|credit|third[_-]?party|asset[_-]?source|attribution|ofl|copying)", re.I)
 APPROVED_PUBLIC_DOCS = {
-    "docs/ASSETS.md", "docs/DEPENDENCIES.md", "docs/VALIDATION.md", "docs/LEADERBOARD.md", "docs/RELEASE_2.9.20.md", "docs/media-manifest.json", "Sources/README.md",
+    "docs/ASSETS.md", "docs/DEPENDENCIES.md", "docs/VALIDATION.md", "docs/LEADERBOARD.md", "docs/RELEASE_2.9.20.md", "docs/RELEASE_2.9.24.md", "docs/media-manifest.json", "Sources/README.md",
     "Sources/DiverHands/SOURCE.md", "Sources/DiverHands/UNITY-XR-HANDS-LICENSE.md",
     "Sources/MarineExpansion/COMPANIONS.md", "Sources/MarineExpansion/SOURCE.md",
     "Sources/MarketReef/SOURCE.md", "Sources/SchoolFish/README.md",
@@ -46,6 +46,8 @@ APPROVED_PUBLIC_DOCS = {
 # These reviewed media files are owned artwork or labeled historical captures.
 # Approving a path alone must not allow private evidence to replace them.
 APPROVED_PUBLIC_IMAGES = {
+    "docs/images/ripple-gate-2.9.24.png": "c578a12a839e3ac0d917dc4fc6de6ef8516a6dd6d1af3b339ba1f6bbaf9173d9",
+    "docs/videos/ripple-gate-2.9.24.mp4": "04e9130fbd8d083bfe3197aad35d4144b44c3a509ed587f586a64f0b829e1b33",
     "docs/images/ocean-world-poster.jpg": "85f6ac1ef89c2f8dc67a60ec1cf92a843956ad03db4374d1d2f5816e8be0c07f",
     "docs/images/gameplay-preview.gif": "9376db111fe174de33a053ee4b64352497351c9cd29ff7bb1ab6e2ef35afafca",
     "docs/videos/oceanworld-gameplay-720p.mp4": "40c3d6a99d87d65895fed825c38d9c0b5d3acc80c3e170f1370ffc36ea832a58",
@@ -57,6 +59,7 @@ APPROVED_PUBLIC_IMAGES = {
 }
 # Preserve the already-published privacy text exactly; legal edits need separate review.
 APPROVED_IMMUTABLE_DOCS = {
+    "Sources/MarineExpansion/mackerel-volume-admission.json": "a8725632c9d42da957ead4fee4bcbd6c6b7d183bd792ddad6d49e3614876ccab",
     # Sealed public projections preserve admitted output hashes and animation/texture measurements.
     'Sources/MarineExpansion/mackerel-native-admission.json': 'd7fa3e40d04a99bd2d50f84a76038ba01d5a6487b52c65e4a60e8d089a3c239d',
     'Sources/MarineExpansion/butterfly-native-admission.json': '1616ff7de82d699a5ae6525a010237012b468b58ec1f4bd98bafdb21f16627a9',

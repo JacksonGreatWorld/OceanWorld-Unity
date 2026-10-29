@@ -86,9 +86,9 @@ namespace SwanUnderwater
             naturalistStatus.color = known ? Gold : Muted;
             naturalistDetails.text = known ? F("{0}\n\n栖息线索：{1}\n{2}", L(entry.Description), L(entry.Habitat), L(entry.SearchHint))
                 : F("探索线索：{0}\n\n在合适关卡找到它，用手射线指向并保持观察。\n{1}", L(entry.SearchHint),
-                    L(entry.Id >= 15 && entry.Id <= 24 ? "这是一类贝壳外形记录，不代表新增活体物种。" : "发现后解锁生物说明和近距离模型。"));
+                    L(entry.Id >= 15 && entry.Id <= 24 ? "这是一类贝壳外形记录，不代表新增活体物种。" : "发现后解锁生物说明。"));
             FitNaturalistDetails(naturalistDetails);
-            if (!known) { if (naturalistPreview != null) naturalistPreview.SetActive(false); return; }
+            // Reference shapes help recognition; only descriptions/discovery records stay gated.
             if (previewNaturalistIndex != entry.Id || naturalistPreview == null) CreateNaturalistPreview(entry);
         }
         static void FitNaturalistDetails(Text details)

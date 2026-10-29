@@ -114,7 +114,7 @@ namespace SwanUnderwater
             new OceanSpeciesDefinition(26, 6, "海扇类", "珊瑚", "RealisticReef/market_fan_coral_lod0",
                 "海扇是珊瑚动物的分枝群体，并非海草。源模型仅标注海扇类，未细分到种。",
                 "有水流经过的礁面", "寻找迎着水流展开的细小分枝。", true),
-            new OceanSpeciesDefinition(27, 6, "鲭鱼", "鱼类", "MarineExpansion/mackerel",
+            new OceanSpeciesDefinition(27, 6, "鲭鱼", "鱼类", "MarineExpansion/mackerel-volume",
                 "梭形身体适合持续游动。大西洋鲭鱼常近表层结群；模型未鉴定具体种。模型：Ishxxn（CC BY 4.0），已作游戏适配。",
                 "开阔水域；游戏中为礁外观察水道", "离开礁拱，留意巡游的银色鱼。", false),
             new OceanSpeciesDefinition(28, 6, "蝶鱼", "鱼类", "MarineExpansion/butterfly-fish",
